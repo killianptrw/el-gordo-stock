@@ -1,14 +1,4 @@
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#B5432E">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="El Gordo Stock">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-
-<style>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#B5432E"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="El Gordo Stock"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-192.png"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script><style>
   :root {
     --paper: #FAF6EF;
     --paper-dark: #F0E9DA;
@@ -389,690 +379,357 @@
     font-family: 'Courier New', monospace;
   }
 
-
-  .sound-toggle {
-    position:absolute; right:12px; top:12px; border:1px solid var(--line);
-    background:var(--white); border-radius:999px; width:34px; height:34px;
-    font-size:16px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.06);
-  }
-  .sound-toggle:active { transform:scale(.92); }
-
   .loading { text-align: center; padding: 30px; color: var(--ink-soft); font-size: 13px; }
-</style>
 
-<div id="app">
+  /* Enhanced management UI */
+  .auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--paper)}
+  .auth-card{width:100%;max-width:420px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:24px;box-shadow:0 8px 30px rgba(42,36,32,.08)}
+  .auth-logo{width:76px;height:76px;object-fit:contain;border-radius:18px;display:block;margin:0 auto 12px}
+  .auth-card h2{text-align:center;font-family:Georgia,serif;margin:6px 0 4px}
+  .auth-card .hint{text-align:center;color:var(--ink-soft);font-size:12px;margin:0 0 18px}
+  .auth-error{background:#fff0ed;color:#9b2f1d;border:1px solid #e8b2a7;padding:10px;border-radius:8px;font-size:12px;margin-bottom:12px;display:none}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:8px 16px 0}
+  .user-badge{font-size:10px;color:var(--ink-soft);font-family:'Courier New',monospace;max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .icon-btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:7px 9px;cursor:pointer}
+  .dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 16px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px}
+  .stat .label{font-size:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.7px}
+  .stat .value{font-family:'Courier New',monospace;font-weight:800;font-size:20px;margin-top:4px}
+  .alert-card{margin:0 16px 16px;background:#fff8e7;border:1px solid #ead7a4;border-radius:10px;padding:12px;font-size:12px}
+  .progress{height:8px;background:var(--paper-dark);border-radius:99px;overflow:hidden;margin-top:8px}
+  .progress span{display:block;height:100%;background:var(--stamp)}
+  .role-pill{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:3px 7px;font-size:9px;text-transform:uppercase;letter-spacing:.6px}
+  .admin-only{display:none}
+  .mini-btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 10px;font-weight:700;font-size:11px;cursor:pointer}
+  .danger{color:#9b2f1d;border-color:#e1b0a5}
+  .product-row{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line)}
+  .product-row:last-child{border-bottom:0}
+  .stock-low{color:#a43b26;font-weight:800}
+  .stock-ok{color:#4f7a4f;font-weight:800}
+  .audit-row{padding:9px 0;border-bottom:1px dashed var(--line);font-size:11px}
+  .audit-row:last-child{border-bottom:0}
+  .bar-row{display:grid;grid-template-columns:78px 1fr 70px;align-items:center;gap:8px;margin:7px 0;font-size:11px}
+  .bar-track{height:9px;background:var(--paper-dark);border-radius:99px;overflow:hidden}
+  .bar-fill{height:100%;background:var(--stamp)}
+  @media (max-width:360px){.dashboard-grid{grid-template-columns:1fr}.tabs button{font-size:10px}}
+</style></head><body>
+<div id="auth" class="auth-screen">
+  <div class="auth-card">
+    <img class="auth-logo" src="logo.png" onerror="this.style.display='none'">
+    <h2>El Gordo Stock</h2>
+    <p class="hint">Secure restaurant management</p>
+    <div id="auth-error" class="auth-error"></div>
+    <div class="field"><label>Email</label><input id="auth-email" type="email" autocomplete="username" placeholder="you@example.com"></div>
+    <div class="field"><label>Password</label><input id="auth-password" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+    <button id="auth-signin" class="add-btn">Sign in</button>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
   <div class="receipt-head">
     <div class="eyebrow">★ Stock Tracker ★</div>
     <h1>El Gordo</h1>
     <div class="sub">purchase log &amp; monthly recap</div>
-    <button id="sound-toggle" class="sound-toggle" type="button" aria-label="Toggle sounds">🔊</button>
   </div>
-
+  <div class="topbar">
+    <div><span id="user-email" class="user-badge"></span> <span id="role-pill" class="role-pill"></span></div>
+    <button id="signout" class="icon-btn">↪ Sign out</button>
+  </div>
   <div class="restaurant-toggle">
     <button id="btn-union" class="active">UNION NJ</button>
     <button id="btn-jersey">JERSEY CITY</button>
   </div>
-
   <div class="tabs">
-    <button id="tab-log" class="active">Log purchase</button>
+    <button id="tab-dashboard" class="active">Dashboard</button>
+    <button id="tab-log">Log purchase</button>
     <button id="tab-list">Shopping list</button>
-    <button id="tab-summary">Monthly recap</button>
+    <button id="tab-summary">Recap</button>
+    <button id="tab-admin" class="admin-only">Admin</button>
   </div>
-
-  <div id="view-log"></div>
+  <div id="view-dashboard"></div>
+  <div id="view-log" style="display:none;"></div>
   <div id="view-list" style="display:none;"></div>
   <div id="view-summary" style="display:none;"></div>
-
-  <div class="footer-note">shared online • changes sync between phones</div>
+  <div id="view-admin" style="display:none;"></div>
+  <div class="footer-note">shared online • secure accounts • changes sync between phones</div>
 </div>
 
 <script>
-(function () {
-  const STORAGE_KEY = 'el_gordo_purchases_v1';
-  const CATEGORIES = ['Kitchen', 'Back', 'Front'];
-  const CAT_COLOR = { Kitchen: '#A15A34', Back: '#3D6B8C', Front: '#4F7A4F' };
-  const RESTAURANTS = { union: 'El Gordo Union NJ', jersey: 'El Gordo Jersey City' };
+(function(){
+  const CATEGORIES=['Kitchen','Back','Front'];
+  const CAT_COLOR={Kitchen:'#A15A34',Back:'#3D6B8C',Front:'#4F7A4F'};
+  const RESTAURANTS={union:'El Gordo Union NJ',jersey:'El Gordo Jersey City'};
+  const SUPABASE_URL='https://suidbjuzmuorfatgjppu.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY='sb_publishable_AnO5X-rlrLVlBHcIxsiH7A_dlikRUQI';
+  const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+  const $=id=>document.getElementById(id);
+  let user=null, profile=null;
+  let state={restaurant:'union',tab:'dashboard',category:'Kitchen',listCategory:'Kitchen',listWeek:getMondayISO(new Date()),summaryMonth:new Date().toISOString().slice(0,7),entries:[],shoppingItems:[],products:[],audit:[]};
 
-  let state = {
-    restaurant: 'union',
-    tab: 'log',
-    listCategory: 'Kitchen',
-    listWeek: getMondayISO(new Date()),
-    shoppingItems: [],
-    category: 'Kitchen',
-    entries: [],
-    summaryMonth: new Date().toISOString().slice(0, 7), // YYYY-MM
-    loaded: false
-  };
+  function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+  function money(n){return '$'+(Math.round(Number(n||0)*100)/100).toFixed(2)}
+  function qty(n){return (Math.round(Number(n||0)*100)/100).toString()}
+  function today(){return new Date().toISOString().slice(0,10)}
+  function monday(d){d=new Date(d);d.setHours(12,0,0,0);let day=d.getDay();d.setDate(d.getDate()+(day===0?-6:1-day));return d.toISOString().slice(0,10)}
+  function getMondayISO(d){return monday(d)}
+  function shiftWeek(i,n){let d=new Date(i+'T12:00:00');d.setDate(d.getDate()+7*n);return d.toISOString().slice(0,10)}
+  function weekLabel(i){let s=new Date(i+'T12:00:00'),e=new Date(s);e.setDate(e.getDate()+6);return `${s.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${e.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`}
+  function monthLabel(ym){let [y,m]=ym.split('-').map(Number);return new Date(y,m-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'})}
+  function shiftMonth(ym,n){let [y,m]=ym.split('-').map(Number);m+=n;if(m<1){m=12;y--}if(m>12){m=1;y++}return `${y}-${String(m).padStart(2,'0')}`}
+  function isAdmin(){return profile?.role==='admin'}
+  function canEdit(){return ['admin','manager','employee'].includes(profile?.role)}
+  function canManage(){return ['admin','manager'].includes(profile?.role)}
 
-  const $ = (id) => document.getElementById(id);
+  async function audit(action,entity,details={}){
+    try{await db.from('audit_logs').insert({user_id:user.id,user_email:user.email,action,entity,details})}catch(e){console.warn('audit',e)}
+  }
+  async function loadEntries(){
+    const {data,error}=await db.from('purchases').select('*').order('date',{ascending:false}).order('created_at',{ascending:false});
+    if(error){console.error(error);return}
+    state.entries=(data||[]).map(e=>({...e,qty:Number(e.qty),price:Number(e.price)}));
+  }
+  async function loadShopping(){
+    const {data,error}=await db.from('shopping_list').select('*').eq('restaurant',state.restaurant).eq('week_start',state.listWeek).order('category').order('created_at');
+    if(!error) state.shoppingItems=data||[];
+  }
+  async function loadProducts(){
+    const {data,error}=await db.from('inventory').select('*').eq('restaurant',state.restaurant).order('item');
+    state.products=error?[]:data||[];
+  }
+  async function loadProfiles(){
+    const {data,error}=await db.from('profiles').select('*').order('email');
+    return error?[]:(data||[]);
+  }
+  async function updateRole(id,role){
+    const {error}=await db.from('profiles').update({role}).eq('id',id);
+    if(error)return alert(error.message);
+    await audit('role_change','profile',{id,role});
+    await renderAdmin();
+  }
+  async function loadAudit(){
+    const {data,error}=await db.from('audit_logs').select('*').order('created_at',{ascending:false}).limit(100);
+    state.audit=error?[]:data||[];
+  }
 
-  // ===== Subtle UI sounds =====
-  let soundsEnabled = localStorage.getItem('el_gordo_sounds') !== 'off';
-  let audioCtx = null;
+  function renderNav(){
+    ['dashboard','log','list','summary','admin'].forEach(t=>{let b=$('tab-'+t);if(b)b.classList.toggle('active',state.tab===t)});
+    $('view-dashboard').style.display=state.tab==='dashboard'?'block':'none';
+    $('view-log').style.display=state.tab==='log'?'block':'none';
+    $('view-list').style.display=state.tab==='list'?'block':'none';
+    $('view-summary').style.display=state.tab==='summary'?'block':'none';
+    $('view-admin').style.display=state.tab==='admin'?'block':'none';
+    $('btn-union').classList.toggle('active',state.restaurant==='union');
+    $('btn-jersey').classList.toggle('active',state.restaurant==='jersey');
+    $('tab-admin').style.display=isAdmin()?'block':'none';
+  }
 
-  function getAudioContext() {
-    if (!audioCtx) {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return null;
-      audioCtx = new AC();
+  async function renderDashboard(){
+    await loadProducts();
+    const week=monday(new Date()), weekEntries=state.entries.filter(e=>e.restaurant===state.restaurant && e.date>=week);
+    const spend=weekEntries.reduce((s,e)=>s+e.qty*e.price,0);
+    const low=state.products.filter(p=>Number(p.current_qty)<Number(p.min_qty));
+    const pending=state.shoppingItems.length;
+    const catTotals=CATEGORIES.map(c=>({c,total:weekEntries.filter(e=>e.category===c).reduce((s,e)=>s+e.qty*e.price,0)}));
+    const max=Math.max(...catTotals.map(x=>x.total),1);
+    $('view-dashboard').innerHTML=`
+      <div class="dashboard-grid">
+        <div class="stat"><div class="label">This week</div><div class="value">${money(spend)}</div></div>
+        <div class="stat"><div class="label">Shopping items</div><div class="value">${pending}</div></div>
+        <div class="stat"><div class="label">Low stock</div><div class="value">${low.length}</div></div>
+        <div class="stat"><div class="label">Purchases</div><div class="value">${weekEntries.length}</div></div>
+      </div>
+      ${low.length?`<div class="alert-card"><strong>⚠️ Low stock</strong><div style="margin-top:6px">${low.slice(0,8).map(p=>`• ${esc(p.item)} — ${qty(p.current_qty)} ${esc(p.unit)} / min ${qty(p.min_qty)}`).join('<br>')}</div><button class="mini-btn" id="generate-smart" style="margin-top:10px">✨ Generate shopping list</button></div>`:''}
+      <div class="card"><div class="section-label" style="margin:0 0 8px">This week by area</div>
+        ${catTotals.map(x=>`<div class="bar-row"><span>${x.c}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(x.total/max*100)}%;background:${CAT_COLOR[x.c]}"></div></div><b>${money(x.total)}</b></div>`).join('')}
+      </div>
+      <div class="alert-card" style="background:#fff;border-color:var(--line)">
+        <strong>📅 Weekly order reminder</strong>
+        <div style="margin-top:5px;color:var(--ink-soft)">Use this reminder when you prepare the weekly order for your patronne.</div>
+        <button class="mini-btn" id="reminder-btn" style="margin-top:9px">Enable reminder</button>
+      </div>
+      <div class="card">
+        <div style="font-weight:800;margin-bottom:8px">Quick actions</div>
+        <div class="shopping-actions">
+          <button id="dash-log">➕ Purchase</button><button id="dash-list" class="primary">🛒 Shopping list</button>
+        </div>
+        <div class="shopping-actions">
+          <button id="dash-report">📄 Report / PDF</button><button id="dash-backup">💾 Backup data</button>
+        </div>
+      </div>`;
+    $('dash-log').onclick=()=>{state.tab='log';renderAll()};
+    $('dash-list').onclick=()=>{state.tab='list';renderAll()};
+    $('dash-report').onclick=exportReport;
+    $('dash-backup').onclick=exportBackup;
+    const g=$('generate-smart'); if(g)g.onclick=generateSmartList;
+    const rb=$('reminder-btn');
+    if(rb){
+      rb.textContent=localStorage.getItem('elgordo_weekly_reminder')==='1'?'✓ Reminder enabled':'Enable reminder';
+      rb.onclick=()=>{localStorage.setItem('elgordo_weekly_reminder','1');rb.textContent='✓ Reminder enabled';alert('Reminder enabled on this device. Open the app on your weekly order day to see the reminder.');};
     }
-    if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
-    return audioCtx;
   }
 
-  function playTone(type = 'click') {
-    if (!soundsEnabled) return;
-    const ctx = getAudioContext();
-    if (!ctx) return;
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const settings = {
-      click:  { f: 520, d: 0.055, v: 0.035 },
-      success:{ f: 760, d: 0.12,  v: 0.045 },
-      add:    { f: 620, d: 0.08,  v: 0.04 },
-      delete: { f: 240, d: 0.09,  v: 0.035 },
-      share:  { f: 680, d: 0.10,  v: 0.04 },
-      open:   { f: 420, d: 0.12,  v: 0.025 }
-    }[type] || { f: 520, d: 0.055, v: 0.035 };
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(settings.f, now);
-    gain.gain.setValueAtTime(settings.v, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + settings.d);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + settings.d + 0.01);
+  function catPills(selected,attr){return CATEGORIES.map(c=>`<div class="cat-pill ${c===selected?'active':''}" data-${attr}="${c}">${c}</div>`).join('')}
+
+  function renderLog(){
+    const entries=state.entries.filter(e=>e.restaurant===state.restaurant).slice(0,40);
+    $('view-log').innerHTML=`<div class="card"><div class="cat-pills">${catPills(state.category,'cat')}</div>
+      <div class="field"><label>Item</label><input id="f-item" placeholder="e.g. Whole chicken"></div>
+      <div class="row-2"><div class="field"><label>Quantity</label><input id="f-qty" type="number" inputmode="decimal"></div><div class="field"><label>Unit</label><input id="f-unit" placeholder="kg, pack..."></div></div>
+      <div class="row-2"><div class="field"><label>Unit price ($)</label><input id="f-price" type="number" step="0.01" inputmode="decimal"></div><div class="field"><label>Date</label><input id="f-date" type="date" value="${today()}"></div></div>
+      <button class="add-btn" id="f-add">Add to log</button></div>
+      <div class="section-label">Recent — ${RESTAURANTS[state.restaurant]}</div>
+      <div class="card" style="padding:6px 16px">${entries.length?entries.map(e=>`<div class="log-entry"><div class="info"><span class="dot" style="background:${CAT_COLOR[e.category]}"></span><div class="text"><div class="item-name">${esc(e.item)}</div><div class="meta">${e.date} · ${qty(e.qty)} ${esc(e.unit)} · ${e.category}</div></div></div><div style="display:flex;align-items:center"><div class="amount">${money(e.qty*e.price)}</div>${canManage()?`<button class="del" data-del="${e.id}">✕</button>`:''}</div></div>`).join(''):'<div class="empty-note">No purchases logged yet.</div>'}</div>`;
+    document.querySelectorAll('[data-cat]').forEach(x=>x.onclick=()=>{state.category=x.dataset.cat;renderLog()});
+    $('f-add').onclick=addPurchase;
+    document.querySelectorAll('[data-del]').forEach(x=>x.onclick=()=>deletePurchase(x.dataset.del));
   }
 
-  function soundTypeForButton(btn) {
-    const id = btn.id || '';
-    const text = (btn.textContent || '').trim().toLowerCase();
-    if (id === 'sound-toggle') return null;
-    if (id === 'export-excel' || text.includes('share list')) return 'share';
-    if (text.includes('add to log') || text.includes('add to shopping list')) return 'add';
-    if (text === '✕' || text.includes('delete') || text.includes('remove')) return 'delete';
-    if (id.startsWith('tab-') || id.startsWith('btn-') || id.startsWith('cat-')) return 'click';
-    return 'click';
+  async function addPurchase(){
+    if(!canEdit())return alert('Your account is read-only.');
+    const item=$('f-item').value.trim(), q=Number($('f-qty').value), unit=$('f-unit').value.trim(), price=Number($('f-price').value), date=$('f-date').value||today();
+    if(!item||!q||isNaN(price))return alert('Please fill Item, Quantity and Unit price.');
+    const {data,error}=await db.from('purchases').insert({restaurant:state.restaurant,category:state.category,item,qty:q,unit,price,date}).select().single();
+    if(error)return alert(error.message);
+    await audit('create','purchase',{id:data.id,item,qty:q,restaurant:state.restaurant});
+    const existing=state.products.find(p=>p.item.toLowerCase()===item.toLowerCase()&&p.category===state.category);
+    if(existing){await db.from('inventory').update({current_qty:Number(existing.current_qty)+q,updated_at:new Date().toISOString()}).eq('id',existing.id);await audit('stock_in','inventory',{item,qty:q})}
+    await refresh();
   }
 
-  document.addEventListener('click', (event) => {
-    const btn = event.target.closest && event.target.closest('button');
-    if (!btn) return;
-    const type = soundTypeForButton(btn);
-    if (type) playTone(type);
-  }, true);
-
-  // ===== Online shared database (Supabase) =====
-  // Replace these two values with the Project URL and Publishable key from Supabase.
-  const SUPABASE_URL = 'https://suidbjuzmuorfatgjppu.supabase.co';
-  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_AnO5X-rlrLVlBHcIxsiH7A_dlikRUQI';
-  const supabaseClient = (window.supabase && !SUPABASE_URL.startsWith('PASTE_'))
-    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
-    : null;
-
-  async function loadEntries() {
-    if (!supabaseClient) {
-      state.entries = [];
-      state.loaded = true;
-      return;
-    }
-    try {
-      const { data, error } = await supabaseClient
-        .from('purchases')
-        .select('*')
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      state.entries = (data || []).map(e => ({
-        id: e.id, restaurant: e.restaurant, category: e.category,
-        item: e.item, qty: Number(e.qty), unit: e.unit || '',
-        price: Number(e.price), date: e.date
-      }));
-    } catch (e) {
-      console.error('Database load error', e);
-      alert('Could not load shared stock data. Check your Supabase setup.');
-      state.entries = [];
-    }
-    state.loaded = true;
+  async function deletePurchase(id){
+    if(!confirm('Delete this purchase?'))return;
+    const {error}=await db.from('purchases').delete().eq('id',id);if(error)return alert(error.message);
+    await audit('delete','purchase',{id});await refresh();
   }
 
-  async function saveEntries() {
-    // Kept for compatibility with the original app. Individual writes happen below.
-    return true;
+  async function renderList(){
+    await loadShopping();
+    const grouped={};state.shoppingItems.forEach(x=>(grouped[x.category]??=[]).push(x));
+    $('view-list').innerHTML=`<div class="card"><div class="week-picker"><button id="s-prev">‹</button><div class="label">WEEK OF ${weekLabel(state.listWeek).toUpperCase()}</div><button id="s-next">›</button></div>
+      <div class="cat-pills">${catPills(state.listCategory,'listcat')}</div>
+      <div class="field"><label>Item to buy</label><input id="s-item" placeholder="e.g. Rice"></div>
+      <div class="row-2"><div class="field"><label>Quantity</label><input id="s-qty" type="number" inputmode="decimal"></div><div class="field"><label>Unit</label><input id="s-unit" placeholder="bag, box..."></div></div>
+      <button class="shopping-add-btn" id="s-add">Add to shopping list</button>
+      <div class="shopping-actions"><button class="primary" id="s-share">📤 Send to patronne</button><button id="s-smart">✨ Smart list</button></div></div>
+      <div class="section-label">To buy — ${RESTAURANTS[state.restaurant]}</div><div class="card" style="padding:6px 16px">${state.shoppingItems.length?CATEGORIES.map(c=>(grouped[c]||[]).length?`<div class="summary-cat-header"><div class="bar" style="background:${CAT_COLOR[c]}"></div><span>${c}</span></div>`+(grouped[c]||[]).map(x=>`<div class="shopping-row"><div class="info"><span class="dot" style="background:${CAT_COLOR[c]}"></span><div class="text"><div class="item-name">${esc(x.item)}</div><div class="meta">${weekLabel(state.listWeek)}</div></div></div><div style="display:flex;align-items:center"><div class="qty">${qty(x.qty)} ${esc(x.unit||'')}</div>${canManage()?`<button class="remove-list" data-rm="${x.id}">✕</button>`:''}</div></div>`).join(''):'').join(''):'<div class="shopping-empty">No items.</div>'}</div>`;
+    document.querySelectorAll('[data-listcat]').forEach(x=>x.onclick=()=>{state.listCategory=x.dataset.listcat;renderList()});
+    $('s-add').onclick=addShopping; $('s-share').onclick=shareList; $('s-smart').onclick=generateSmartList;
+    $('s-prev').onclick=async()=>{state.listWeek=shiftWeek(state.listWeek,-1);await renderList()};
+    $('s-next').onclick=async()=>{state.listWeek=shiftWeek(state.listWeek,1);await renderList()};
+    document.querySelectorAll('[data-rm]').forEach(x=>x.onclick=()=>removeShopping(x.dataset.rm));
   }
 
-  function startRealtime() {
-    if (!supabaseClient) return;
-    supabaseClient.channel('purchases-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases' }, async () => {
-        await loadEntries();
-        renderAll();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'shopping_list' }, async () => {
-        if (state.tab === 'list') await renderListView();
-      })
+  async function addShopping(){
+    const item=$('s-item').value.trim(),q=Number($('s-qty').value),unit=$('s-unit').value.trim();if(!item||!q)return alert('Enter item and quantity.');
+    const {data,error}=await db.from('shopping_list').insert({restaurant:state.restaurant,category:state.listCategory,item,qty:q,unit,week_start:state.listWeek}).select().single();
+    if(error)return alert(error.message);await audit('create','shopping_list',{id:data.id,item,qty:q});await renderList();
+  }
+  async function removeShopping(id){if(!confirm('Remove this item?'))return;const {error}=await db.from('shopping_list').delete().eq('id',id);if(error)return alert(error.message);await audit('delete','shopping_list',{id});await renderList()}
+  async function generateSmartList(){
+    await loadProducts();
+    const low=state.products.filter(p=>Number(p.current_qty)<Number(p.min_qty));
+    if(!low.length)return alert('No products are below their minimum stock.');
+    for(const p of low){const need=Math.max(0,Number(p.min_qty)-Number(p.current_qty));await db.from('shopping_list').insert({restaurant:state.restaurant,category:p.category,item:p.item,qty:need,unit:p.unit||'',week_start:state.listWeek});await audit('smart_add','shopping_list',{item:p.item,qty:need})}
+    state.tab='list';await renderAll();
+  }
+  function buildListText(){let out=`EL GORDO — SHOPPING LIST\n${RESTAURANTS[state.restaurant]}\nWeek: ${weekLabel(state.listWeek)}\n`;for(const c of CATEGORIES){const rows=state.shoppingItems.filter(x=>x.category===c);if(!rows.length)continue;out+=`\n${c.toUpperCase()}\n`;rows.forEach(x=>out+=`• ${x.item} — ${qty(x.qty)}${x.unit?' '+x.unit:''}\n`)}return out}
+  async function shareList(){await loadShopping();if(!state.shoppingItems.length)return alert('Shopping list is empty.');const text=buildListText();if(navigator.share){try{await navigator.share({title:'El Gordo Shopping List',text})}catch(e){}}else{await navigator.clipboard?.writeText(text);alert('List copied.')}}
+
+  async function renderSummary(){
+    const rows=state.entries.filter(e=>e.restaurant===state.restaurant&&e.date.startsWith(state.summaryMonth));
+    let total=0;const blocks=CATEGORIES.map(c=>{const items={};rows.filter(e=>e.category===c).forEach(e=>{items[e.item]??={qty:0,amount:0};items[e.item].qty+=e.qty;items[e.item].amount+=e.qty*e.price});const arr=Object.entries(items);const sub=arr.reduce((s,[,v])=>s+v.amount,0);total+=sub;return `<div class="summary-cat-header"><div class="bar" style="background:${CAT_COLOR[c]}"></div><span>${c}</span></div>${arr.length?`<table class="summary-table"><thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead><tbody>${arr.map(([k,v])=>`<tr><td class="item-cell">${esc(k)}</td><td class="num-cell">${qty(v.qty)}</td><td class="num-cell">${money(v.amount)}</td></tr>`).join('')}</tbody></table><div class="cat-subtotal" style="border-left:3px solid ${CAT_COLOR[c]}"><span>${c} total</span><span class="val">${money(sub)}</span></div>`:'<div class="empty-note">No items this month.</div>'}`}).join('');
+    $('view-summary').innerHTML=`<div class="card"><div class="month-picker"><button id="m-prev">‹</button><div class="label">${monthLabel(state.summaryMonth).toUpperCase()}</div><button id="m-next">›</button></div><div style="font-size:11px;color:var(--ink-soft);text-align:center;margin-bottom:8px">${RESTAURANTS[state.restaurant]}</div><div class="shopping-actions"><button class="primary" id="excel">📊 Excel</button><button id="report">📄 PDF / Report</button></div>${blocks}<div class="grand-total"><span>Total</span><span class="val">${money(total)}</span></div></div>`;
+    $('m-prev').onclick=()=>{state.summaryMonth=shiftMonth(state.summaryMonth,-1);renderSummary()};$('m-next').onclick=()=>{state.summaryMonth=shiftMonth(state.summaryMonth,1);renderSummary()};$('excel').onclick=exportExcel;$('report').onclick=exportReport;
+  }
+  function exportExcel(){
+    if(!window.XLSX)return alert('Excel library unavailable.');
+    const rows=state.entries.filter(e=>e.restaurant===state.restaurant&&e.date.startsWith(state.summaryMonth)).map(e=>({Date:e.date,Restaurant:RESTAURANTS[e.restaurant],Category:e.category,Item:e.item,Quantity:e.qty,Unit:e.unit||'','Unit Price ($)':e.price,'Total ($)':e.qty*e.price}));
+    if(!rows.length)return alert('No purchases this month.');
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Purchases');XLSX.writeFile(wb,`El-Gordo-${state.restaurant}-${state.summaryMonth}.xlsx`);
+  }
+  function exportReport(){
+    const old=document.title;document.title=`El Gordo Report ${state.summaryMonth}`;window.print();setTimeout(()=>document.title=old,500)
+  }
+  function exportBackup(){
+    const payload={exported_at:new Date().toISOString(),restaurant:state.restaurant,purchases:state.entries,shopping_list:state.shoppingItems,inventory:state.products};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`el-gordo-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href);
+  }
+
+  async function renderAdmin(){
+    if(!isAdmin()){ $('view-admin').innerHTML='<div class="card">Admin only.</div>';return}
+    await loadProducts();await loadAudit(); const profiles=await loadProfiles();
+    $('view-admin').innerHTML=`<div class="card"><h3 style="margin-top:0">⚙️ Inventory & minimums</h3><p style="font-size:11px;color:var(--ink-soft)">Set minimum stock so Smart Shopping List can generate weekly orders.</p>
+      <div class="field"><label>Item</label><input id="p-item" placeholder="Rice"></div>
+      <div class="row-2"><div class="field"><label>Category</label><select id="p-cat" style="width:100%;padding:10px;border:1.5px solid var(--line);border-radius:7px">${CATEGORIES.map(c=>`<option>${c}</option>`).join('')}</select></div><div class="field"><label>Unit</label><input id="p-unit" placeholder="bag"></div></div>
+      <div class="row-2"><div class="field"><label>Current stock</label><input id="p-current" type="number"></div><div class="field"><label>Minimum</label><input id="p-min" type="number"></div></div><button class="add-btn" id="p-save">Save product</button></div>
+      <div class="card"><div style="font-weight:800;margin-bottom:8px">Products — ${RESTAURANTS[state.restaurant]}</div>${state.products.length?state.products.map(p=>`<div class="product-row"><div><b>${esc(p.item)}</b><div class="meta">${p.category} · min ${qty(p.min_qty)} ${esc(p.unit||'')}</div></div><div class="${Number(p.current_qty)<Number(p.min_qty)?'stock-low':'stock-ok'}">${qty(p.current_qty)} ${esc(p.unit||'')}</div></div>`).join(''):'No products configured.'}</div>
+      <div class="card"><div style="font-weight:800;margin-bottom:8px">👥 User roles</div>
+        ${profiles.map(p=>`<div class="product-row"><div><b>${esc(p.email||p.id)}</b><div class="meta">${p.id===user.id?'You':''}</div></div>
+        <select data-role-id="${p.id}" style="padding:7px;border:1px solid var(--line);border-radius:7px">
+          ${['admin','manager','employee','viewer'].map(r=>`<option value="${r}" ${p.role===r?'selected':''}>${r}</option>`).join('')}
+        </select></div>`).join('')}
+      </div>
+      <div class="card"><div style="font-weight:800;margin-bottom:8px">Recent activity</div>${state.audit.slice(0,30).map(a=>`<div class="audit-row"><b>${esc(a.action)}</b> · ${esc(a.user_email||'')}<br><span style="color:var(--ink-soft)">${new Date(a.created_at).toLocaleString()} · ${esc(JSON.stringify(a.details||{}))}</span></div>`).join('')||'No activity yet.'}</div>`;
+    $('p-save').onclick=saveProduct;
+    document.querySelectorAll('[data-role-id]').forEach(s=>s.onchange=()=>updateRole(s.dataset.roleId,s.value));
+  }
+  async function saveProduct(){
+    const item=$('p-item').value.trim(),category=$('p-cat').value,unit=$('p-unit').value.trim(),current=Number($('p-current').value),min=Number($('p-min').value);
+    if(!item||isNaN(current)||isNaN(min))return alert('Fill item, current stock and minimum.');
+    const {error}=await db.from('inventory').upsert({restaurant:state.restaurant,item,category,unit,current_qty:current,min_qty:min,updated_at:new Date().toISOString()},{onConflict:'restaurant,item'});
+    if(error)return alert(error.message);await audit('upsert','inventory',{item,category,current,min});await renderAdmin();
+  }
+
+  async function loadProfile(){
+    const {data:{user:u}}=await db.auth.getUser();user=u;if(!u)return;
+    const {data}=await db.from('profiles').select('*').eq('id',u.id).maybeSingle();
+    profile=data||{id:u.id,role:'employee',email:u.email};
+    $('user-email').textContent=u.email||'';$('role-pill').textContent=profile.role||'employee';
+  }
+
+  async function refresh(){
+    await loadEntries();await loadShopping();await loadProducts();renderAll();
+  }
+  async function renderAll(){
+    renderNav();
+    if(state.tab==='dashboard')await renderDashboard();
+    if(state.tab==='log')renderLog();
+    if(state.tab==='list')await renderList();
+    if(state.tab==='summary')await renderSummary();
+    if(state.tab==='admin')await renderAdmin();
+  }
+
+  async function boot(){
+    db.auth.onAuthStateChange(async(_event,session)=>{
+      if(session){await loadProfile();$('auth').style.display='none';$('app').style.display='block';await refresh();startRealtime()}
+      else{$('auth').style.display='flex';$('app').style.display='none'}
+    });
+    const {data:{session}}=await db.auth.getSession();
+    if(session){await loadProfile();$('auth').style.display='none';$('app').style.display='block';await refresh();startRealtime()}
+  }
+  let realtimeStarted=false;
+  function startRealtime(){
+    if(realtimeStarted)return;realtimeStarted=true;
+    db.channel('el-gordo-live').on('postgres_changes',{event:'*',schema:'public',table:'purchases'},async()=>{await loadEntries();await renderAll()})
+      .on('postgres_changes',{event:'*',schema:'public',table:'shopping_list'},async()=>{if(state.tab==='list')await renderList()})
+      .on('postgres_changes',{event:'*',schema:'public',table:'inventory'},async()=>{await loadProducts();if(state.tab==='dashboard'||state.tab==='admin')await renderAll()})
       .subscribe();
   }
 
-  function fmtMoney(n) {
-    return '$' + (Math.round(n * 100) / 100).toFixed(2);
-  }
-  function fmtQty(n) {
-    return (Math.round(n * 100) / 100).toString();
-  }
-  function todayISO() {
-    return new Date().toISOString().slice(0, 10);
-  }
-  function monthLabel(ym) {
-    const [y, m] = ym.split('-').map(Number);
-    const d = new Date(y, m - 1, 1);
-    return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  }
-  function shiftMonth(ym, delta) {
-    let [y, m] = ym.split('-').map(Number);
-    m += delta;
-    if (m < 1) { m = 12; y -= 1; }
-    if (m > 12) { m = 1; y += 1; }
-    return y + '-' + String(m).padStart(2, '0');
-  }
-
-  function renderTabs() {
-    $('btn-union').classList.toggle('active', state.restaurant === 'union');
-    $('btn-jersey').classList.toggle('active', state.restaurant === 'jersey');
-    $('tab-log').classList.toggle('active', state.tab === 'log');
-    $('tab-summary').classList.toggle('active', state.tab === 'summary');
-    $('view-log').style.display = state.tab === 'log' ? 'block' : 'none';
-    $('view-list').style.display = state.tab === 'list' ? 'block' : 'none';
-    $('view-summary').style.display = state.tab === 'summary' ? 'block' : 'none';
-  }
-
-
-  function getMondayISO(date) {
-    const d = new Date(date);
-    d.setHours(12, 0, 0, 0);
-    const day = d.getDay();
-    const diff = day === 0 ? -6 : 1 - day;
-    d.setDate(d.getDate() + diff);
-    return d.toISOString().slice(0, 10);
-  }
-
-  function shiftWeek(iso, delta) {
-    const d = new Date(iso + 'T12:00:00');
-    d.setDate(d.getDate() + (delta * 7));
-    return d.toISOString().slice(0, 10);
-  }
-
-  function weekLabel(iso) {
-    const start = new Date(iso + 'T12:00:00');
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    const opts = { month: 'short', day: 'numeric' };
-    return `${start.toLocaleDateString('en-US', opts)} – ${end.toLocaleDateString('en-US', { ...opts, year: 'numeric' })}`;
-  }
-
-  async function loadShoppingItems() {
-    if (!supabaseClient) { state.shoppingItems = []; return; }
-    try {
-      const { data, error } = await supabaseClient
-        .from('shopping_list')
-        .select('*')
-        .eq('restaurant', state.restaurant)
-        .eq('week_start', state.listWeek)
-        .order('category')
-        .order('created_at');
-      if (error) throw error;
-      state.shoppingItems = data || [];
-    } catch (e) {
-      console.error('Shopping list load error', e);
-      state.shoppingItems = [];
-    }
-  }
-
-  async function addShoppingItem() {
-    const item = $('s-item').value.trim();
-    const qty = parseFloat($('s-qty').value);
-    const unit = $('s-unit').value.trim();
-    if (!item || isNaN(qty) || qty <= 0) {
-      alert('Please enter an item and quantity.');
-      return;
-    }
-    const btn = $('s-add');
-    btn.disabled = true;
-    btn.textContent = 'Adding...';
-    const { error } = await supabaseClient.from('shopping_list').insert({
-      restaurant: state.restaurant,
-      category: state.listCategory,
-      item,
-      qty,
-      unit,
-      week_start: state.listWeek
-    });
-    if (error) {
-      console.error(error);
-      alert('Could not add this item. Make sure the shopping_list table has been created.');
-    } else {
-      await loadShoppingItems();
-      renderListView();
-    }
-    btn.disabled = false;
-    btn.textContent = 'Add to shopping list';
-  }
-
-  async function removeShoppingItem(id) {
-    if (!confirm('Remove this item from the shopping list?')) return;
-    const { error } = await supabaseClient.from('shopping_list').delete().eq('id', id);
-    if (error) {
-      console.error(error);
-      alert('Could not remove this item.');
-      return;
-    }
-    await loadShoppingItems();
-    renderListView();
-  }
-
-  function buildShoppingMessage() {
-    const grouped = {};
-    state.shoppingItems.forEach(x => {
-      (grouped[x.category] ||= []).push(x);
-    });
-    let out = `EL GORDO — SHOPPING LIST\n${RESTAURANTS[state.restaurant]}\nWeek: ${weekLabel(state.listWeek)}\n`;
-    CATEGORIES.forEach(cat => {
-      const rows = grouped[cat] || [];
-      if (!rows.length) return;
-      out += `\n${cat.toUpperCase()}\n`;
-      rows.forEach(x => { out += `• ${x.item} — ${fmtQty(Number(x.qty))}${x.unit ? ' ' + x.unit : ''}\n`; });
-    });
-    return out;
-  }
-
-  async function shareShoppingList() {
-    if (!state.shoppingItems.length) {
-      alert('The shopping list is empty.');
-      return;
-    }
-    const message = buildShoppingMessage();
-    if (navigator.share) {
-      try { await navigator.share({ title: 'El Gordo Shopping List', text: message }); }
-      catch (e) { if (e && e.name !== 'AbortError') console.error(e); }
-    } else if (navigator.clipboard) {
-      await navigator.clipboard.writeText(message);
-      alert('Shopping list copied. You can paste it into Messages or WhatsApp.');
-    } else {
-      prompt('Copy this shopping list:', message);
-    }
-  }
-
-  async function renderListView() {
-    const el = $('view-list');
-    await loadShoppingItems();
-    const grouped = {};
-    state.shoppingItems.forEach(x => (grouped[x.category] ||= []).push(x));
-
-    el.innerHTML = `
-      <div class="card">
-        <div class="week-picker">
-          <button id="s-prev">‹</button>
-          <div class="label">WEEK OF ${weekLabel(state.listWeek).toUpperCase()}</div>
-          <button id="s-next">›</button>
-        </div>
-        <div class="cat-pills">
-          ${CATEGORIES.map(c => `<div class="cat-pill ${c === state.listCategory ? 'active' : ''}" data-list-cat="${c}">${c}</div>`).join('')}
-        </div>
-        <div class="field">
-          <label>Item to buy</label>
-          <input type="text" id="s-item" placeholder="e.g. Whole chicken">
-        </div>
-        <div class="row-2">
-          <div class="field">
-            <label>Quantity</label>
-            <input type="number" id="s-qty" placeholder="0" inputmode="decimal">
-          </div>
-          <div class="field">
-            <label>Unit</label>
-            <input type="text" id="s-unit" placeholder="kg, pack...">
-          </div>
-        </div>
-        <button class="shopping-add-btn" id="s-add">Add to shopping list</button>
-        <div class="shopping-actions">
-          <button class="primary" id="s-share">📤 Share list</button>
-        </div>
-      </div>
-
-      <div class="section-label">To buy — ${RESTAURANTS[state.restaurant]}</div>
-      <div class="card" style="padding: 6px 16px;">
-        ${state.shoppingItems.length === 0
-          ? '<div class="shopping-empty">No items on this week’s shopping list.</div>'
-          : CATEGORIES.map(cat => {
-              const rows = grouped[cat] || [];
-              if (!rows.length) return '';
-              return `<div class="summary-cat-header">
-                <div class="bar" style="background:${CAT_COLOR[cat]}"></div><span>${cat}</span>
-              </div>` + rows.map(x => `
-                <div class="shopping-row">
-                  <div class="info">
-                    <span class="dot" style="background:${CAT_COLOR[cat]}"></span>
-                    <div class="text">
-                      <div class="item-name">${escapeHtml(x.item)}</div>
-                      <div class="meta">${RESTAURANTS[state.restaurant]} · ${weekLabel(state.listWeek)}</div>
-                    </div>
-                  </div>
-                  <div style="display:flex;align-items:center;">
-                    <div class="qty">${fmtQty(Number(x.qty))} ${escapeHtml(x.unit || '')}</div>
-                    <button class="remove-list" data-list-del="${x.id}">✕</button>
-                  </div>
-                </div>
-              `).join('');
-            }).join('')}
-      </div>
-    `;
-
-    el.querySelectorAll('[data-list-cat]').forEach(p => p.addEventListener('click', () => {
-      state.listCategory = p.getAttribute('data-list-cat');
-      renderListView();
-    }));
-    $('s-add').addEventListener('click', addShoppingItem);
-    $('s-share').addEventListener('click', shareShoppingList);
-    $('s-prev').addEventListener('click', async () => { state.listWeek = shiftWeek(state.listWeek, -1); await renderListView(); });
-    $('s-next').addEventListener('click', async () => { state.listWeek = shiftWeek(state.listWeek, 1); await renderListView(); });
-    el.querySelectorAll('[data-list-del]').forEach(btn => btn.addEventListener('click', () => removeShoppingItem(btn.getAttribute('data-list-del'))));
-  }
-
-  function renderLogView() {
-    const el = $('view-log');
-    const myEntries = state.entries
-      .filter(e => e.restaurant === state.restaurant)
-      .sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id));
-
-    el.innerHTML = `
-      <div class="card">
-        <div class="cat-pills">
-          ${CATEGORIES.map(c => `<div class="cat-pill ${c === state.category ? 'active' : ''}" data-cat="${c}">${c}</div>`).join('')}
-        </div>
-        <div class="field">
-          <label>Item</label>
-          <input type="text" id="f-item" placeholder="e.g. Whole chicken">
-        </div>
-        <div class="row-2">
-          <div class="field">
-            <label>Quantity</label>
-            <input type="number" id="f-qty" placeholder="0" inputmode="decimal">
-          </div>
-          <div class="field">
-            <label>Unit</label>
-            <input type="text" id="f-unit" placeholder="kg, pack...">
-          </div>
-        </div>
-        <div class="row-2">
-          <div class="field">
-            <label>Unit price ($)</label>
-            <input type="number" id="f-price" placeholder="0.00" inputmode="decimal">
-          </div>
-          <div class="field">
-            <label>Date</label>
-            <input type="date" id="f-date" value="${todayISO()}">
-          </div>
-        </div>
-        <button class="add-btn" id="f-add">Add to log</button>
-      </div>
-
-      <div class="section-label">Recent — ${RESTAURANTS[state.restaurant]}</div>
-      <div class="card" style="padding: 6px 16px;">
-        ${myEntries.length === 0
-          ? '<div class="empty-note">No purchases logged yet for this restaurant.</div>'
-          : myEntries.slice(0, 40).map(e => `
-            <div class="log-entry" data-id="${e.id}">
-              <div class="info">
-                <span class="dot" style="background:${CAT_COLOR[e.category]}"></span>
-                <div class="text">
-                  <div class="item-name">${escapeHtml(e.item)}</div>
-                  <div class="meta">${e.date} · ${fmtQty(e.qty)} ${escapeHtml(e.unit)} · ${e.category}</div>
-                </div>
-              </div>
-              <div style="display:flex; align-items:center;">
-                <div class="amount">${fmtMoney(e.qty * e.price)}</div>
-                <button class="del" data-del="${e.id}">✕</button>
-              </div>
-            </div>
-          `).join('')}
-      </div>
-    `;
-
-    el.querySelectorAll('.cat-pill').forEach(p => {
-      p.addEventListener('click', () => {
-        state.category = p.getAttribute('data-cat');
-        renderLogView();
-      });
-    });
-
-    $('f-add').addEventListener('click', onAddEntry);
-    el.querySelectorAll('[data-del]').forEach(btn => {
-      btn.addEventListener('click', () => onDelete(btn.getAttribute('data-del')));
-    });
-  }
-
-  async function onAddEntry() {
-    const item = $('f-item').value.trim();
-    const qty = parseFloat($('f-qty').value);
-    const unit = $('f-unit').value.trim();
-    const price = parseFloat($('f-price').value);
-    const date = $('f-date').value || todayISO();
-
-    if (!item || isNaN(qty) || isNaN(price)) {
-      alert('Please fill in at least Item, Quantity and Unit price.');
-      return;
-    }
-
-    const addBtn = $('f-add');
-    addBtn.disabled = true;
-    addBtn.textContent = 'Adding...';
-
-    if (!supabaseClient) {
-      alert('First connect the app to Supabase (see SETUP.md).');
-      addBtn.disabled = false;
-      addBtn.textContent = 'Add to log';
-      return;
-    }
-    const { error } = await supabaseClient.from('purchases').insert({
-      restaurant: state.restaurant, category: state.category, item, qty, unit, price, date
-    });
-    if (error) {
-      console.error(error);
-      alert('Could not save this purchase.');
-      addBtn.disabled = false;
-      addBtn.textContent = 'Add to log';
-      return;
-    }
-    await loadEntries();
-    renderLogView();
-  }
-
-  async function onDelete(id) {
-    if (!supabaseClient) return;
-    if (!confirm('Delete this purchase?')) return;
-    const { error } = await supabaseClient.from('purchases').delete().eq('id', id);
-    if (error) {
-      console.error(error);
-      alert('Could not delete this purchase.');
-      return;
-    }
-    await loadEntries();
-    renderLogView();
-    if (state.tab === 'summary') renderSummaryView();
-  }
-
-  function renderSummaryView() {
-    const el = $('view-summary');
-    const monthEntries = state.entries.filter(e =>
-      e.restaurant === state.restaurant && e.date.slice(0, 7) === state.summaryMonth
-    );
-
-    let grandTotal = 0;
-    const blocks = CATEGORIES.map(cat => {
-      const items = {};
-      monthEntries.filter(e => e.category === cat).forEach(e => {
-        if (!items[e.item]) items[e.item] = { qty: 0, amount: 0 };
-        items[e.item].qty += e.qty;
-        items[e.item].amount += e.qty * e.price;
-      });
-      const rows = Object.keys(items).sort();
-      let catTotal = 0;
-      rows.forEach(r => { catTotal += items[r].amount; });
-      grandTotal += catTotal;
-
-      return `
-        <div class="summary-cat-header">
-          <div class="bar" style="background:${CAT_COLOR[cat]}"></div>
-          <span>${cat}</span>
-        </div>
-        ${rows.length === 0
-          ? '<div class="empty-note" style="padding:8px 0 16px;">No items this month.</div>'
-          : `<table class="summary-table">
-              <thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead>
-              <tbody>
-                ${rows.map(r => `
-                  <tr>
-                    <td class="item-cell">${escapeHtml(r)}</td>
-                    <td class="num-cell">${fmtQty(items[r].qty)}</td>
-                    <td class="num-cell">${fmtMoney(items[r].amount)}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-            <div class="cat-subtotal" style="border-left: 3px solid ${CAT_COLOR[cat]};">
-              <span>${cat} total</span>
-              <span class="val">${fmtMoney(catTotal)}</span>
-            </div>`}
-      `;
-    }).join('');
-
-    el.innerHTML = `
-      <div class="card">
-        <div class="month-picker">
-          <button id="m-prev">‹</button>
-          <div class="label">${monthLabel(state.summaryMonth).toUpperCase()}</div>
-          <button id="m-next">›</button>
-        </div>
-        <div style="font-size:11px; color:var(--ink-soft); text-align:center; margin-bottom:4px;">
-          ${RESTAURANTS[state.restaurant]}
-        </div>
-        <button class="shopping-add-btn" id="export-excel" style="margin-top:10px;">📊 Export Excel</button>
-        ${blocks}
-        <div class="grand-total">
-          <span>Total (Kitchen + Back + Front)</span>
-          <span class="val">${fmtMoney(grandTotal)}</span>
-        </div>
-      </div>
-    `;
-
-    $('m-prev').addEventListener('click', () => {
-      state.summaryMonth = shiftMonth(state.summaryMonth, -1);
-      renderSummaryView();
-    });
-    $('m-next').addEventListener('click', () => {
-      state.summaryMonth = shiftMonth(state.summaryMonth, 1);
-      renderSummaryView();
-    });
-    $('export-excel').addEventListener('click', exportMonthlyExcel);
-  }
-
-  function exportMonthlyExcel() {
-    if (!window.XLSX) {
-      alert('Excel export is not available right now. Please try again.');
-      return;
-    }
-    const monthEntries = state.entries.filter(e =>
-      e.restaurant === state.restaurant && e.date.slice(0, 7) === state.summaryMonth
-    );
-    if (!monthEntries.length) {
-      alert('There are no purchases for this month to export.');
-      return;
-    }
-
-    const rows = monthEntries.map(e => ({
-      Date: e.date,
-      Restaurant: RESTAURANTS[e.restaurant],
-      Category: e.category,
-      Item: e.item,
-      Quantity: Number(e.qty),
-      Unit: e.unit || '',
-      'Unit Price ($)': Number(e.price),
-      'Total ($)': Number(e.qty) * Number(e.price)
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(rows);
-    ws['!cols'] = [
-      { wch: 12 }, { wch: 24 }, { wch: 12 }, { wch: 28 },
-      { wch: 10 }, { wch: 12 }, { wch: 16 }, { wch: 14 }
-    ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Purchases');
-
-    const summary = [];
-    for (const cat of CATEGORIES) {
-      const total = monthEntries
-        .filter(e => e.category === cat)
-        .reduce((sum, e) => sum + Number(e.qty) * Number(e.price), 0);
-      summary.push({ Category: cat, 'Total ($)': total });
-    }
-    summary.push({
-      Category: 'TOTAL',
-      'Total ($)': monthEntries.reduce((sum, e) => sum + Number(e.qty) * Number(e.price), 0)
-    });
-    const ws2 = XLSX.utils.json_to_sheet(summary);
-    ws2['!cols'] = [{ wch: 16 }, { wch: 14 }];
-    XLSX.utils.book_append_sheet(wb, ws2, 'Monthly Summary');
-
-    const fileName = `El-Gordo-${state.restaurant}-${state.summaryMonth}.xlsx`;
-    XLSX.writeFile(wb, fileName);
-  }
-
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, m => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    })[m]);
-  }
-
-  function renderAll() {
-    renderTabs();
-    renderLogView();
-    if (state.tab === 'list') renderListView();
-    renderSummaryView();
-  }
-
-  $('btn-union').addEventListener('click', () => { state.restaurant = 'union'; renderAll(); });
-  $('btn-jersey').addEventListener('click', () => { state.restaurant = 'jersey'; renderAll(); });
-  $('tab-log').addEventListener('click', () => { state.tab = 'log'; renderAll(); });
-  $('tab-list').addEventListener('click', () => { state.tab = 'list'; renderAll(); });
-  $('tab-summary').addEventListener('click', () => { state.tab = 'summary'; renderAll(); });
-
-  const soundToggle = $('sound-toggle');
-  function updateSoundToggle() {
-    if (!soundToggle) return;
-    soundToggle.textContent = soundsEnabled ? '🔊' : '🔇';
-    soundToggle.setAttribute('aria-label', soundsEnabled ? 'Turn sounds off' : 'Turn sounds on');
-  }
-  soundToggle?.addEventListener('click', (event) => {
-    event.stopPropagation();
-    soundsEnabled = !soundsEnabled;
-    localStorage.setItem('el_gordo_sounds', soundsEnabled ? 'on' : 'off');
-    updateSoundToggle();
-    if (soundsEnabled) playTone('success');
-  });
-  updateSoundToggle();
-
-  let launchSoundPlayed = false;
-  const unlockSound = () => { if (!launchSoundPlayed && soundsEnabled) { launchSoundPlayed = true; playTone('open'); } document.removeEventListener('pointerdown', unlockSound, true); };
-  document.addEventListener('pointerdown', unlockSound, true);
-
-  (async function init() {
-    $('view-log').innerHTML = '<div class="loading">Loading...</div>';
-    await loadEntries();
-    renderAll();
-    startRealtime();
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(console.error);
-    }
-  })();
+  $('auth-signin').onclick=async()=>{
+    const email=$('auth-email').value.trim(),password=$('auth-password').value;
+    const {error}=await db.auth.signInWithPassword({email,password});
+    if(error){$('auth-error').textContent=error.message;$('auth-error').style.display='block'}
+  };
+  $('signout').onclick=async()=>{if(confirm('Sign out?'))await db.auth.signOut()};
+  $('btn-union').onclick=async()=>{state.restaurant='union';await refresh()};
+  $('btn-jersey').onclick=async()=>{state.restaurant='jersey';await refresh()};
+  $('tab-dashboard').onclick=async()=>{state.tab='dashboard';await renderAll()};
+  $('tab-log').onclick=async()=>{state.tab='log';await renderAll()};
+  $('tab-list').onclick=async()=>{state.tab='list';await renderAll()};
+  $('tab-summary').onclick=async()=>{state.tab='summary';await renderAll()};
+  $('tab-admin').onclick=async()=>{state.tab='admin';await renderAll()};
+  boot();
 })();
 </script>
+</body></html>
