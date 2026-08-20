@@ -1,0 +1,663 @@
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#B5432E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="El Gordo Stock">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root {
+    --paper: #FAF6EF;
+    --paper-dark: #F0E9DA;
+    --ink: #2A2420;
+    --ink-soft: #6B6156;
+    --line: #DDD2BE;
+    --kitchen: #A15A34;
+    --back: #3D6B8C;
+    --front: #4F7A4F;
+    --stamp: #B5432E;
+    --white: #FFFFFF;
+  }
+
+  * { box-sizing: border-box; }
+
+  #app {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 0 40px 0;
+    min-height: 100vh;
+  }
+
+  .receipt-head {
+    text-align: center;
+    padding: 22px 16px 16px;
+    border-bottom: 2px dashed var(--line);
+    position: relative;
+  }
+  .receipt-head .eyebrow {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+  .receipt-head h1 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: 28px;
+    margin: 4px 0 2px;
+    letter-spacing: 0.5px;
+  }
+  .receipt-head .sub {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+
+  .restaurant-toggle {
+    display: flex;
+    margin: 16px;
+    border: 1.5px solid var(--ink);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .restaurant-toggle button {
+    flex: 1;
+    padding: 12px 6px;
+    border: none;
+    background: var(--white);
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    font-size: 12.5px;
+    letter-spacing: 0.5px;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .restaurant-toggle button.active {
+    background: var(--stamp);
+    color: var(--white);
+  }
+  .restaurant-toggle button:first-child { border-right: 1.5px solid var(--ink); }
+
+  .tabs {
+    display: flex;
+    margin: 0 16px 12px;
+    gap: 6px;
+  }
+  .tabs button {
+    flex: 1;
+    padding: 9px 4px;
+    border: 1px solid var(--line);
+    background: var(--white);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .tabs button.active {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+
+  .card {
+    background: var(--white);
+    margin: 0 16px 16px;
+    border-radius: 10px;
+    padding: 16px;
+    border: 1px solid var(--line);
+  }
+
+  .cat-pills {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .cat-pill {
+    flex: 1;
+    padding: 10px 4px;
+    border-radius: 8px;
+    border: 1.5px solid var(--line);
+    background: var(--paper);
+    text-align: center;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--ink-soft);
+  }
+  .cat-pill.active[data-cat="Kitchen"] { background: var(--kitchen); border-color: var(--kitchen); color: white; }
+  .cat-pill.active[data-cat="Back"] { background: var(--back); border-color: var(--back); color: white; }
+  .cat-pill.active[data-cat="Front"] { background: var(--front); border-color: var(--front); color: white; }
+
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .field input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 7px;
+    font-size: 15px;
+    font-family: inherit;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .field input:focus { outline: 2px solid var(--stamp); outline-offset: 1px; }
+
+  .row-2 { display: flex; gap: 10px; }
+  .row-2 .field { flex: 1; }
+
+  .add-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--stamp);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 14.5px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .add-btn:active { opacity: 0.85; }
+  .add-btn:disabled { background: var(--line); color: var(--ink-soft); }
+
+  .section-label {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    margin: 0 20px 8px;
+  }
+
+  .log-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--line);
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-entry .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    display: inline-block; margin-right: 8px; flex-shrink: 0;
+  }
+  .log-entry .info { display: flex; align-items: center; min-width: 0; }
+  .log-entry .text { min-width: 0; }
+  .log-entry .item-name { font-weight: 700; font-size: 13.5px; }
+  .log-entry .meta { font-size: 11px; color: var(--ink-soft); font-family: 'Courier New', monospace; }
+  .log-entry .amount {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    font-size: 13.5px;
+    white-space: nowrap;
+    margin-left: 8px;
+  }
+  .log-entry .del {
+    background: none; border: none; color: var(--ink-soft);
+    font-size: 16px; margin-left: 8px; cursor: pointer; padding: 2px 6px;
+  }
+
+  .empty-note {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 13px;
+    padding: 24px 12px;
+    font-style: italic;
+  }
+
+  .month-picker {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .month-picker button {
+    background: var(--paper-dark);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    width: 32px; height: 32px;
+    font-size: 16px;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  .month-picker .label {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+
+  .summary-cat-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 16px 0 6px;
+  }
+  .summary-cat-header .bar { width: 4px; height: 14px; border-radius: 2px; }
+  .summary-cat-header span {
+    font-size: 12px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--ink-soft);
+  }
+
+  table.summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 4px;
+  }
+  table.summary-table th {
+    text-align: left;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--ink-soft);
+    padding: 4px 2px;
+    border-bottom: 1px solid var(--line);
+  }
+  table.summary-table th:not(:first-child), table.summary-table td:not(:first-child) {
+    text-align: right;
+  }
+  table.summary-table td {
+    padding: 7px 2px;
+    font-size: 13px;
+    border-bottom: 1px dashed var(--line);
+  }
+  table.summary-table td.item-cell { font-weight: 600; }
+  table.summary-table td.num-cell { font-family: 'Courier New', monospace; }
+
+  .grand-total {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 12px;
+    margin-top: 4px;
+    border-top: 2px solid var(--ink);
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .grand-total .val { font-family: 'Courier New', monospace; }
+
+  .cat-subtotal {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 10px;
+    margin: 6px 0 18px;
+    background: var(--paper-dark);
+    border-radius: 0 6px 6px 0;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .cat-subtotal .val { font-family: 'Courier New', monospace; }
+
+  .footer-note {
+    text-align: center;
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    padding: 10px 24px 0;
+    font-family: 'Courier New', monospace;
+  }
+
+  .loading { text-align: center; padding: 30px; color: var(--ink-soft); font-size: 13px; }
+</style>
+
+<div id="app">
+  <div class="receipt-head">
+    <div class="eyebrow">★ Stock Tracker ★</div>
+    <h1>El Gordo</h1>
+    <div class="sub">purchase log &amp; monthly recap</div>
+  </div>
+
+  <div class="restaurant-toggle">
+    <button id="btn-union" class="active">UNION NJ</button>
+    <button id="btn-jersey">JERSEY CITY</button>
+  </div>
+
+  <div class="tabs">
+    <button id="tab-log" class="active">Log purchase</button>
+    <button id="tab-summary">Monthly recap</button>
+  </div>
+
+  <div id="view-log"></div>
+  <div id="view-summary" style="display:none;"></div>
+
+  <div class="footer-note">shared online • changes sync between phones</div>
+</div>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'el_gordo_purchases_v1';
+  const CATEGORIES = ['Kitchen', 'Back', 'Front'];
+  const CAT_COLOR = { Kitchen: '#A15A34', Back: '#3D6B8C', Front: '#4F7A4F' };
+  const RESTAURANTS = { union: 'El Gordo Union NJ', jersey: 'El Gordo Jersey City' };
+
+  let state = {
+    restaurant: 'union',
+    tab: 'log',
+    category: 'Kitchen',
+    entries: [],
+    summaryMonth: new Date().toISOString().slice(0, 7), // YYYY-MM
+    loaded: false
+  };
+
+  const $ = (id) => document.getElementById(id);
+
+  // ===== Online shared database (Supabase) =====
+  // Replace these two values with the Project URL and Publishable key from Supabase.
+  const SUPABASE_URL = 'https://suidbjuzmuorfatgjppu.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_AnO5X-rlrLVlBHcIxsiH7A_dlikRUQI';
+  const supabaseClient = (window.supabase && !SUPABASE_URL.startsWith('PASTE_'))
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
+    : null;
+
+  async function loadEntries() {
+    if (!supabaseClient) {
+      state.entries = [];
+      state.loaded = true;
+      return;
+    }
+    try {
+      const { data, error } = await supabaseClient
+        .from('purchases')
+        .select('*')
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      state.entries = (data || []).map(e => ({
+        id: e.id, restaurant: e.restaurant, category: e.category,
+        item: e.item, qty: Number(e.qty), unit: e.unit || '',
+        price: Number(e.price), date: e.date
+      }));
+    } catch (e) {
+      console.error('Database load error', e);
+      alert('Could not load shared stock data. Check your Supabase setup.');
+      state.entries = [];
+    }
+    state.loaded = true;
+  }
+
+  async function saveEntries() {
+    // Kept for compatibility with the original app. Individual writes happen below.
+    return true;
+  }
+
+  function startRealtime() {
+    if (!supabaseClient) return;
+    supabaseClient.channel('purchases-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases' }, async () => {
+        await loadEntries();
+        renderAll();
+      })
+      .subscribe();
+  }
+
+  function fmtMoney(n) {
+    return '$' + (Math.round(n * 100) / 100).toFixed(2);
+  }
+  function fmtQty(n) {
+    return (Math.round(n * 100) / 100).toString();
+  }
+  function todayISO() {
+    return new Date().toISOString().slice(0, 10);
+  }
+  function monthLabel(ym) {
+    const [y, m] = ym.split('-').map(Number);
+    const d = new Date(y, m - 1, 1);
+    return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  }
+  function shiftMonth(ym, delta) {
+    let [y, m] = ym.split('-').map(Number);
+    m += delta;
+    if (m < 1) { m = 12; y -= 1; }
+    if (m > 12) { m = 1; y += 1; }
+    return y + '-' + String(m).padStart(2, '0');
+  }
+
+  function renderTabs() {
+    $('btn-union').classList.toggle('active', state.restaurant === 'union');
+    $('btn-jersey').classList.toggle('active', state.restaurant === 'jersey');
+    $('tab-log').classList.toggle('active', state.tab === 'log');
+    $('tab-summary').classList.toggle('active', state.tab === 'summary');
+    $('view-log').style.display = state.tab === 'log' ? 'block' : 'none';
+    $('view-summary').style.display = state.tab === 'summary' ? 'block' : 'none';
+  }
+
+  function renderLogView() {
+    const el = $('view-log');
+    const myEntries = state.entries
+      .filter(e => e.restaurant === state.restaurant)
+      .sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id));
+
+    el.innerHTML = `
+      <div class="card">
+        <div class="cat-pills">
+          ${CATEGORIES.map(c => `<div class="cat-pill ${c === state.category ? 'active' : ''}" data-cat="${c}">${c}</div>`).join('')}
+        </div>
+        <div class="field">
+          <label>Item</label>
+          <input type="text" id="f-item" placeholder="e.g. Whole chicken">
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Quantity</label>
+            <input type="number" id="f-qty" placeholder="0" inputmode="decimal">
+          </div>
+          <div class="field">
+            <label>Unit</label>
+            <input type="text" id="f-unit" placeholder="kg, pack...">
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Unit price ($)</label>
+            <input type="number" id="f-price" placeholder="0.00" inputmode="decimal">
+          </div>
+          <div class="field">
+            <label>Date</label>
+            <input type="date" id="f-date" value="${todayISO()}">
+          </div>
+        </div>
+        <button class="add-btn" id="f-add">Add to log</button>
+      </div>
+
+      <div class="section-label">Recent — ${RESTAURANTS[state.restaurant]}</div>
+      <div class="card" style="padding: 6px 16px;">
+        ${myEntries.length === 0
+          ? '<div class="empty-note">No purchases logged yet for this restaurant.</div>'
+          : myEntries.slice(0, 40).map(e => `
+            <div class="log-entry" data-id="${e.id}">
+              <div class="info">
+                <span class="dot" style="background:${CAT_COLOR[e.category]}"></span>
+                <div class="text">
+                  <div class="item-name">${escapeHtml(e.item)}</div>
+                  <div class="meta">${e.date} · ${fmtQty(e.qty)} ${escapeHtml(e.unit)} · ${e.category}</div>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center;">
+                <div class="amount">${fmtMoney(e.qty * e.price)}</div>
+                <button class="del" data-del="${e.id}">✕</button>
+              </div>
+            </div>
+          `).join('')}
+      </div>
+    `;
+
+    el.querySelectorAll('.cat-pill').forEach(p => {
+      p.addEventListener('click', () => {
+        state.category = p.getAttribute('data-cat');
+        renderLogView();
+      });
+    });
+
+    $('f-add').addEventListener('click', onAddEntry);
+    el.querySelectorAll('[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => onDelete(btn.getAttribute('data-del')));
+    });
+  }
+
+  async function onAddEntry() {
+    const item = $('f-item').value.trim();
+    const qty = parseFloat($('f-qty').value);
+    const unit = $('f-unit').value.trim();
+    const price = parseFloat($('f-price').value);
+    const date = $('f-date').value || todayISO();
+
+    if (!item || isNaN(qty) || isNaN(price)) {
+      alert('Please fill in at least Item, Quantity and Unit price.');
+      return;
+    }
+
+    const addBtn = $('f-add');
+    addBtn.disabled = true;
+    addBtn.textContent = 'Adding...';
+
+    if (!supabaseClient) {
+      alert('First connect the app to Supabase (see SETUP.md).');
+      addBtn.disabled = false;
+      addBtn.textContent = 'Add to log';
+      return;
+    }
+    const { error } = await supabaseClient.from('purchases').insert({
+      restaurant: state.restaurant, category: state.category, item, qty, unit, price, date
+    });
+    if (error) {
+      console.error(error);
+      alert('Could not save this purchase.');
+      addBtn.disabled = false;
+      addBtn.textContent = 'Add to log';
+      return;
+    }
+    await loadEntries();
+    renderLogView();
+  }
+
+  async function onDelete(id) {
+    if (!supabaseClient) return;
+    if (!confirm('Delete this purchase?')) return;
+    const { error } = await supabaseClient.from('purchases').delete().eq('id', id);
+    if (error) {
+      console.error(error);
+      alert('Could not delete this purchase.');
+      return;
+    }
+    await loadEntries();
+    renderLogView();
+    if (state.tab === 'summary') renderSummaryView();
+  }
+
+  function renderSummaryView() {
+    const el = $('view-summary');
+    const monthEntries = state.entries.filter(e =>
+      e.restaurant === state.restaurant && e.date.slice(0, 7) === state.summaryMonth
+    );
+
+    let grandTotal = 0;
+    const blocks = CATEGORIES.map(cat => {
+      const items = {};
+      monthEntries.filter(e => e.category === cat).forEach(e => {
+        if (!items[e.item]) items[e.item] = { qty: 0, amount: 0 };
+        items[e.item].qty += e.qty;
+        items[e.item].amount += e.qty * e.price;
+      });
+      const rows = Object.keys(items).sort();
+      let catTotal = 0;
+      rows.forEach(r => { catTotal += items[r].amount; });
+      grandTotal += catTotal;
+
+      return `
+        <div class="summary-cat-header">
+          <div class="bar" style="background:${CAT_COLOR[cat]}"></div>
+          <span>${cat}</span>
+        </div>
+        ${rows.length === 0
+          ? '<div class="empty-note" style="padding:8px 0 16px;">No items this month.</div>'
+          : `<table class="summary-table">
+              <thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead>
+              <tbody>
+                ${rows.map(r => `
+                  <tr>
+                    <td class="item-cell">${escapeHtml(r)}</td>
+                    <td class="num-cell">${fmtQty(items[r].qty)}</td>
+                    <td class="num-cell">${fmtMoney(items[r].amount)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            <div class="cat-subtotal" style="border-left: 3px solid ${CAT_COLOR[cat]};">
+              <span>${cat} total</span>
+              <span class="val">${fmtMoney(catTotal)}</span>
+            </div>`}
+      `;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="card">
+        <div class="month-picker">
+          <button id="m-prev">‹</button>
+          <div class="label">${monthLabel(state.summaryMonth).toUpperCase()}</div>
+          <button id="m-next">›</button>
+        </div>
+        <div style="font-size:11px; color:var(--ink-soft); text-align:center; margin-bottom:4px;">
+          ${RESTAURANTS[state.restaurant]}
+        </div>
+        ${blocks}
+        <div class="grand-total">
+          <span>Total (Kitchen + Back + Front)</span>
+          <span class="val">${fmtMoney(grandTotal)}</span>
+        </div>
+      </div>
+    `;
+
+    $('m-prev').addEventListener('click', () => {
+      state.summaryMonth = shiftMonth(state.summaryMonth, -1);
+      renderSummaryView();
+    });
+    $('m-next').addEventListener('click', () => {
+      state.summaryMonth = shiftMonth(state.summaryMonth, 1);
+      renderSummaryView();
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, m => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[m]);
+  }
+
+  function renderAll() {
+    renderTabs();
+    renderLogView();
+    renderSummaryView();
+  }
+
+  $('btn-union').addEventListener('click', () => { state.restaurant = 'union'; renderAll(); });
+  $('btn-jersey').addEventListener('click', () => { state.restaurant = 'jersey'; renderAll(); });
+  $('tab-log').addEventListener('click', () => { state.tab = 'log'; renderAll(); });
+  $('tab-summary').addEventListener('click', () => { state.tab = 'summary'; renderAll(); });
+
+  (async function init() {
+    $('view-log').innerHTML = '<div class="loading">Loading...</div>';
+    await loadEntries();
+    renderAll();
+    startRealtime();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(console.error);
+    }
+  })();
+})();
+</script>
