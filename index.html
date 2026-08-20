@@ -94,6 +94,30 @@ button{touch-action:manipulation}
 .mini-btn{font-size:11px}.danger{color:#9b2f1d;border-color:#e1b0a5}
 .week-picker,.month-picker{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.week-picker .label,.month-picker .label{flex:1;text-align:center;font-size:12px;font-weight:850;letter-spacing:.3px}.week-picker button,.month-picker button{width:38px;height:38px;padding:0;font-size:18px}
 
+
+/* Communications / notes */
+.notes-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.note-card{position:relative;border:1px solid rgba(255,255,255,.9);border-radius:22px;padding:15px;background:rgba(255,255,255,.78);box-shadow:var(--shadow-soft);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);overflow:hidden;animation:bentoIn .35s cubic-bezier(.2,.8,.2,1) both}
+.note-card.pinned{background:linear-gradient(145deg,rgba(255,248,231,.98),rgba(255,255,255,.78));border-color:rgba(218,185,100,.35)}
+.note-accent{position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:0 99px 99px 0}
+.note-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-left:5px}
+.note-title{font-size:14px;font-weight:850;letter-spacing:-.2px;line-height:1.2}
+.note-type{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;background:rgba(23,23,23,.055);font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);white-space:nowrap}
+.note-body{margin:9px 5px 10px;font-size:12px;line-height:1.5;color:var(--ink-soft,#5f5b55);white-space:pre-wrap;word-break:break-word}
+.note-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-left:5px;font-size:9px;color:var(--muted)}
+.note-actions{display:flex;gap:6px;margin:10px 5px 0}
+.note-actions button{border:1px solid var(--line);border-radius:12px;padding:8px 9px;background:rgba(255,255,255,.68);font-size:10px;font-weight:800;color:var(--ink);cursor:pointer}
+.note-actions button:active{transform:scale(.97)}
+.note-actions .pin{background:#171717;color:#fff;border-color:#171717}
+.notes-filter{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;margin-bottom:10px}.notes-filter::-webkit-scrollbar{display:none}
+.notes-filter button{flex:0 0 auto;border:1px solid var(--line);border-radius:999px;padding:8px 11px;background:rgba(255,255,255,.65);font-size:10px;font-weight:800;color:var(--muted)}
+.notes-filter button.active{background:#171717;color:#fff;border-color:#171717}
+.note-compose{background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(248,244,239,.78))!important}
+.note-compose textarea{width:100%;min-height:110px;resize:vertical;padding:13px 14px;border:1px solid var(--line);border-radius:15px;font-size:14px;background:rgba(255,255,255,.72);color:var(--ink);outline:none;transition:border-color .18s,box-shadow .18s}
+.note-compose textarea:focus{border-color:rgba(181,67,46,.45);box-shadow:0 0 0 4px rgba(181,67,46,.09)}
+.notes-empty{text-align:center;color:var(--muted);padding:28px 10px;font-size:12px}
+.pin-mark{font-size:11px}
+
 /* Lists */
 .log-entry,.shopping-row,.product-row,.audit-row{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:12px 0;border-bottom:1px solid rgba(23,23,23,.07)}
 .log-entry:last-child,.shopping-row:last-child,.product-row:last-child,.audit-row:last-child{border-bottom:0}
@@ -138,7 +162,7 @@ table.summary-table{width:100%;border-collapse:separate;border-spacing:0;overflo
   <div class="receipt-head">
     <div class="eyebrow">★ Stock Tracker ★</div>
     <h1>El Gordo</h1>
-    <div class="sub">purchase log &amp; monthly recap</div><div style="display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.66);border:1px solid rgba(23,23,23,.07);font-size:10px;font-weight:800;color:#6f6a64"><span style="width:7px;height:7px;border-radius:50%;background:#5c9b67;box-shadow:0 0 0 4px rgba(92,155,103,.11)"></span> Live sync</div>
+    <div class="sub">stock · purchases · team communications</div><div style="display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.66);border:1px solid rgba(23,23,23,.07);font-size:10px;font-weight:800;color:#6f6a64"><span style="width:7px;height:7px;border-radius:50%;background:#5c9b67;box-shadow:0 0 0 4px rgba(92,155,103,.11)"></span> Live sync</div>
   </div>
   <div class="topbar">
     <div><span id="user-email" class="user-badge"></span> <span id="role-pill" class="role-pill"></span></div>
@@ -152,12 +176,14 @@ table.summary-table{width:100%;border-collapse:separate;border-spacing:0;overflo
     <button id="tab-dashboard" class="active">Dashboard</button>
     <button id="tab-log">Log purchase</button>
     <button id="tab-list">Shopping list</button>
+    <button id="tab-notes">📌 Notes</button>
     <button id="tab-summary">Recap</button>
     <button id="tab-admin" class="admin-only">Admin</button>
   </div>
   <div id="view-dashboard"></div>
   <div id="view-log" style="display:none;"></div>
   <div id="view-list" style="display:none;"></div>
+  <div id="view-notes" style="display:none;"></div>
   <div id="view-summary" style="display:none;"></div>
   <div id="view-admin" style="display:none;"></div>
   <div class="footer-note">shared online • secure accounts • changes sync between phones</div>
@@ -173,7 +199,7 @@ table.summary-table{width:100%;border-collapse:separate;border-spacing:0;overflo
   const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
   const $=id=>document.getElementById(id);
   let user=null, profile=null;
-  let state={restaurant:'union',tab:'dashboard',category:'Kitchen',listCategory:'Kitchen',listWeek:getMondayISO(new Date()),summaryMonth:new Date().toISOString().slice(0,7),entries:[],shoppingItems:[],products:[],audit:[]};
+  let state={restaurant:'union',tab:'dashboard',category:'Kitchen',listCategory:'Kitchen',listWeek:getMondayISO(new Date()),summaryMonth:new Date().toISOString().slice(0,7),entries:[],shoppingItems:[],products:[],audit:[],notes:[],noteFilter:'all',editingNoteId:null};
 
   function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
   function money(n){return '$'+(Math.round(Number(n||0)*100)/100).toFixed(2)}
@@ -190,7 +216,9 @@ table.summary-table{width:100%;border-collapse:separate;border-spacing:0;overflo
   function canManage(){return ['admin','manager'].includes(profile?.role)}
 
   async function audit(action,entity,details={}){
-    try{await db.from('audit_logs').insert({user_id:user.id,user_email:user.email,action,entity,details})}catch(e){console.warn('audit',e)}
+    try{
+      await db.from('audit_logs').insert({user_id:user.id,action,table_name:entity,record_id:details?.id?String(details.id):null,details:{...details,user_email:user?.email||''}})
+    }catch(e){console.warn('audit',e)}
   }
   async function loadEntries(){
     const {data,error}=await db.from('purchases').select('*').order('date',{ascending:false}).order('created_at',{ascending:false});
@@ -200,6 +228,10 @@ table.summary-table{width:100%;border-collapse:separate;border-spacing:0;overflo
   async function loadShopping(){
     const {data,error}=await db.from('shopping_list').select('*').eq('restaurant',state.restaurant).eq('week_start',state.listWeek).order('category').order('created_at');
     if(!error) state.shoppingItems=data||[];
+  }
+  async function loadNotes(){
+    const {data,error}=await db.from('notes').select('*').eq('restaurant',state.restaurant).order('pinned',{ascending:false}).order('updated_at',{ascending:false});
+    state.notes=error?[]:(data||[]);
   }
   async function loadProducts(){
     const {data,error}=await db.from('inventory').select('*').eq('restaurant',state.restaurant).order('item');
@@ -221,15 +253,26 @@ table.summary-table{width:100%;border-collapse:separate;border-spacing:0;overflo
   }
 
   function renderNav(){
-    ['dashboard','log','list','summary','admin'].forEach(t=>{let b=$('tab-'+t);if(b)b.classList.toggle('active',state.tab===t)});
+    ['dashboard','log','list','notes','summary','admin'].forEach(t=>{let b=$('tab-'+t);if(b)b.classList.toggle('active',state.tab===t)});
     $('view-dashboard').style.display=state.tab==='dashboard'?'block':'none';
     $('view-log').style.display=state.tab==='log'?'block':'none';
     $('view-list').style.display=state.tab==='list'?'block':'none';
+    $('view-notes').style.display=state.tab==='notes'?'block':'none';
     $('view-summary').style.display=state.tab==='summary'?'block':'none';
     $('view-admin').style.display=state.tab==='admin'?'block':'none';
     $('btn-union').classList.toggle('active',state.restaurant==='union');
     $('btn-jersey').classList.toggle('active',state.restaurant==='jersey');
     $('tab-admin').style.display=isAdmin()?'block':'none';
+  }
+
+  function noteTypeInfo(type){
+    const m={important:['📌','Important','#b8862c'],communication:['📢','Communication','#4d7896'],note:['📝','Note','#6b6b6b'],urgent:['⚠️','Urgent','#b5432e'],event:['📅','Event','#628b62']};
+    return m[type]||m.note;
+  }
+  function formatNoteDate(v){return new Date(v).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}
+  function renderPinnedDashboard(){
+    const pinned=state.notes.filter(n=>n.pinned).slice(0,3);
+    return `<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font-weight:800">📌 Pinned information</div><button class="mini-btn" id="dash-notes">View all</button></div>${pinned.length?`<div class="notes-grid" style="margin-top:9px">${pinned.map(n=>{const [ico,label,color]=noteTypeInfo(n.type);return `<div class="note-card pinned"><span class="note-accent" style="background:${color}"></span><div class="note-head"><div><div class="note-title">${ico} ${esc(n.title)}</div><div class="note-body">${esc(n.body)}</div></div><span class="pin-mark">📌</span></div><div class="note-meta"><span>${esc(label)} · ${formatNoteDate(n.updated_at)}</span><span>${esc(n.updated_by_email||n.created_by_email||'')}</span></div></div>`}).join('')}</div>`:'<div class="notes-empty" style="padding:16px 4px">No pinned information yet.</div>'}</div>`;
   }
 
   async function renderDashboard(){
@@ -256,6 +299,7 @@ table.summary-table{width:100%;border-collapse:separate;border-spacing:0;overflo
         <div style="margin-top:5px;color:var(--ink-soft)">Use this reminder when you prepare the weekly order for your patronne.</div>
         <button class="mini-btn" id="reminder-btn" style="margin-top:9px">Enable reminder</button>
       </div>
+      ${renderPinnedDashboard()}
       <div class="card">
         <div style="font-weight:800;margin-bottom:8px">Quick actions</div>
         <div class="shopping-actions">
@@ -344,6 +388,60 @@ table.summary-table{width:100%;border-collapse:separate;border-spacing:0;overflo
   function buildListText(){let out=`EL GORDO — SHOPPING LIST\n${RESTAURANTS[state.restaurant]}\nWeek: ${weekLabel(state.listWeek)}\n`;for(const c of CATEGORIES){const rows=state.shoppingItems.filter(x=>x.category===c);if(!rows.length)continue;out+=`\n${c.toUpperCase()}\n`;rows.forEach(x=>out+=`• ${x.item} — ${qty(x.qty)}${x.unit?' '+x.unit:''}\n`)}return out}
   async function shareList(){await loadShopping();if(!state.shoppingItems.length)return alert('Shopping list is empty.');const text=buildListText();if(navigator.share){try{await navigator.share({title:'El Gordo Shopping List',text})}catch(e){}}else{await navigator.clipboard?.writeText(text);alert('List copied.')}}
 
+  async function renderNotes(){
+    await loadNotes();
+    const filtered=state.noteFilter==='all'?state.notes:state.notes.filter(n=>n.type===state.noteFilter);
+    const editing=state.editingNoteId?state.notes.find(n=>String(n.id)===String(state.editingNoteId)):null;
+    const canWrite=canEdit();
+    $('view-notes').innerHTML=`
+      <div class="card note-compose">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px"><div><div class="section-label" style="margin-bottom:3px">Team board</div><div style="font-size:18px;font-weight:850">📌 Communications</div></div><span class="role-pill">${RESTAURANTS[state.restaurant]}</span></div>
+        ${canWrite?`<div class="field"><label>Type</label><select id="n-type"><option value="important">📌 Important</option><option value="communication">📢 Communication</option><option value="note">📝 Note</option><option value="urgent">⚠️ Urgent</option><option value="event">📅 Event</option></select></div>
+        <div class="field"><label>Title</label><input id="n-title" maxlength="100" placeholder="e.g. Delivery moved to 2 PM"></div>
+        <div class="field"><label>Message</label><textarea id="n-body" maxlength="1000" placeholder="Write the information your team needs to see..."></textarea></div>
+        <div class="shopping-actions"><button id="n-cancel" style="display:${editing?'block':'none'}">Cancel edit</button><button class="primary" id="n-save">${editing?'Save changes':'Publish note'}</button></div>`:'<div class="notes-empty">Your account is view-only. You can read communications but cannot publish them.</div>'}
+      </div>
+      <div class="card" style="padding:14px">
+        <div class="notes-filter">${[['all','All'],['important','📌 Important'],['communication','📢 Communication'],['note','📝 Notes'],['urgent','⚠️ Urgent'],['event','📅 Events']].map(([v,l])=>`<button data-note-filter="${v}" class="${state.noteFilter===v?'active':''}">${l}</button>`).join('')}</div>
+        <div class="notes-grid">${filtered.length?filtered.map((n,i)=>{const [ico,label,color]=noteTypeInfo(n.type);const own=String(n.created_by)===String(user.id);const manage=canManage()||own;return `<div class="note-card ${n.pinned?'pinned':''}" style="animation-delay:${Math.min(i,8)*.03}s"><span class="note-accent" style="background:${color}"></span><div class="note-head"><div><div class="note-title">${ico} ${esc(n.title)}</div><div style="margin-top:5px"><span class="note-type">${label}</span>${n.pinned?'<span class="note-type" style="margin-left:5px">📌 Pinned</span>':''}</div></div></div><div class="note-body">${esc(n.body)}</div><div class="note-meta"><span>${formatNoteDate(n.updated_at)} · ${esc(n.updated_by_email||n.created_by_email||'')}</span><span>${n.updated_at!==n.created_at?'Edited':''}</span></div>${manage?`<div class="note-actions"><button class="pin" data-note-pin="${n.id}">${n.pinned?'📌 Unpin':'📌 Pin'}</button><button data-note-edit="${n.id}">✏️ Edit</button><button class="danger" data-note-delete="${n.id}">🗑 Delete</button></div>`:''}</div>`}).join(''):'<div class="notes-empty">No communications yet. Publish the first one above.</div>'}</div>
+      </div>`;
+    if(!canWrite)return;
+    if(editing){$('n-type').value=editing.type;$('n-title').value=editing.title;$('n-body').value=editing.body}
+    $('n-save').onclick=saveNote;
+    $('n-cancel').onclick=()=>{state.editingNoteId=null;renderNotes()};
+    document.querySelectorAll('[data-note-filter]').forEach(b=>b.onclick=()=>{state.noteFilter=b.dataset.noteFilter;renderNotes()});
+    document.querySelectorAll('[data-note-edit]').forEach(b=>b.onclick=()=>{state.editingNoteId=b.dataset.noteEdit;renderNotes();$('view-notes').scrollIntoView({behavior:'smooth',block:'start'})});
+    document.querySelectorAll('[data-note-delete]').forEach(b=>b.onclick=()=>deleteNote(b.dataset.noteDelete));
+    document.querySelectorAll('[data-note-pin]').forEach(b=>b.onclick=()=>togglePin(b.dataset.notePin));
+    $('dash-notes')?.addEventListener('click',()=>{state.tab='notes';renderAll()});
+  }
+  async function saveNote(){
+    const type=$('n-type').value,title=$('n-title').value.trim(),body=$('n-body').value.trim();
+    if(!title||!body)return alert('Please add a title and message.');
+    if(!canEdit())return;
+    let error,data;
+    if(state.editingNoteId){
+      ({error}=await db.from('notes').update({type,title,body,updated_by:user.id,updated_by_email:user.email,updated_at:new Date().toISOString()}).eq('id',state.editingNoteId));
+      if(error)return alert(error.message);await audit('update','notes',{id:state.editingNoteId,title});
+    }else{
+      ({data,error}=await db.from('notes').insert({restaurant:state.restaurant,type,title,body,pinned:false,created_by:user.id,created_by_email:user.email,updated_by:user.id,updated_by_email:user.email}).select().single());
+      if(error)return alert(error.message);await audit('create','notes',{id:data.id,title});
+    }
+    state.editingNoteId=null;await renderAll();
+  }
+  async function deleteNote(id){
+    const n=state.notes.find(x=>String(x.id)===String(id));if(!n)return;
+    if(!(canManage()||String(n.created_by)===String(user.id)))return alert('You cannot delete this note.');
+    if(!confirm(`Delete “${n.title}”?`))return;
+    const {error}=await db.from('notes').delete().eq('id',id);if(error)return alert(error.message);await audit('delete','notes',{id,title:n.title});await renderNotes();
+  }
+  async function togglePin(id){
+    const n=state.notes.find(x=>String(x.id)===String(id));if(!n)return;
+    if(!(canManage()||String(n.created_by)===String(user.id)))return alert('You cannot pin this note.');
+    const {error}=await db.from('notes').update({pinned:!n.pinned,updated_by:user.id,updated_by_email:user.email,updated_at:new Date().toISOString()}).eq('id',id);
+    if(error)return alert(error.message);await audit(n.pinned?'unpin':'pin','notes',{id,title:n.title});await renderAll();
+  }
+
   async function renderSummary(){
     const rows=state.entries.filter(e=>e.restaurant===state.restaurant&&e.date.startsWith(state.summaryMonth));
     let total=0;const blocks=CATEGORIES.map(c=>{const items={};rows.filter(e=>e.category===c).forEach(e=>{items[e.item]??={qty:0,amount:0};items[e.item].qty+=e.qty;items[e.item].amount+=e.qty*e.price});const arr=Object.entries(items);const sub=arr.reduce((s,[,v])=>s+v.amount,0);total+=sub;return `<div class="summary-cat-header"><div class="bar" style="background:${CAT_COLOR[c]}"></div><span>${c}</span></div>${arr.length?`<table class="summary-table"><thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead><tbody>${arr.map(([k,v])=>`<tr><td class="item-cell">${esc(k)}</td><td class="num-cell">${qty(v.qty)}</td><td class="num-cell">${money(v.amount)}</td></tr>`).join('')}</tbody></table><div class="cat-subtotal" style="border-left:3px solid ${CAT_COLOR[c]}"><span>${c} total</span><span class="val">${money(sub)}</span></div>`:'<div class="empty-note">No items this month.</div>'}`}).join('');
@@ -360,7 +458,7 @@ table.summary-table{width:100%;border-collapse:separate;border-spacing:0;overflo
     const old=document.title;document.title=`El Gordo Report ${state.summaryMonth}`;window.print();setTimeout(()=>document.title=old,500)
   }
   function exportBackup(){
-    const payload={exported_at:new Date().toISOString(),restaurant:state.restaurant,purchases:state.entries,shopping_list:state.shoppingItems,inventory:state.products};
+    const payload={exported_at:new Date().toISOString(),restaurant:state.restaurant,purchases:state.entries,shopping_list:state.shoppingItems,inventory:state.products,notes:state.notes};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`el-gordo-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href);
   }
 
@@ -378,7 +476,7 @@ table.summary-table{width:100%;border-collapse:separate;border-spacing:0;overflo
           ${['admin','manager','employee','viewer'].map(r=>`<option value="${r}" ${p.role===r?'selected':''}>${r}</option>`).join('')}
         </select></div>`).join('')}
       </div>
-      <div class="card"><div style="font-weight:800;margin-bottom:8px">Recent activity</div>${state.audit.slice(0,30).map(a=>`<div class="audit-row"><b>${esc(a.action)}</b> · ${esc(a.user_email||'')}<br><span style="color:var(--ink-soft)">${new Date(a.created_at).toLocaleString()} · ${esc(JSON.stringify(a.details||{}))}</span></div>`).join('')||'No activity yet.'}</div>`;
+      <div class="card"><div style="font-weight:800;margin-bottom:8px">Recent activity</div>${state.audit.slice(0,30).map(a=>`<div class="audit-row"><b>${esc(a.action)}</b> · ${esc(a.details?.user_email||'')}<br><span style="color:var(--ink-soft)">${new Date(a.created_at).toLocaleString()} · ${esc(JSON.stringify(a.details||{}))}</span></div>`).join('')||'No activity yet.'}</div>`;
     $('p-save').onclick=saveProduct;
     document.querySelectorAll('[data-role-id]').forEach(s=>s.onchange=()=>updateRole(s.dataset.roleId,s.value));
   }
@@ -397,13 +495,14 @@ table.summary-table{width:100%;border-collapse:separate;border-spacing:0;overflo
   }
 
   async function refresh(){
-    await loadEntries();await loadShopping();await loadProducts();renderAll();
+    await loadEntries();await loadShopping();await loadProducts();await loadNotes();renderAll();
   }
   async function renderAll(){
     renderNav();
     if(state.tab==='dashboard')await renderDashboard();
     if(state.tab==='log')renderLog();
     if(state.tab==='list')await renderList();
+    if(state.tab==='notes')await renderNotes();
     if(state.tab==='summary')await renderSummary();
     if(state.tab==='admin')await renderAdmin();
   }
@@ -422,6 +521,7 @@ table.summary-table{width:100%;border-collapse:separate;border-spacing:0;overflo
     db.channel('el-gordo-live').on('postgres_changes',{event:'*',schema:'public',table:'purchases'},async()=>{await loadEntries();await renderAll()})
       .on('postgres_changes',{event:'*',schema:'public',table:'shopping_list'},async()=>{if(state.tab==='list')await renderList()})
       .on('postgres_changes',{event:'*',schema:'public',table:'inventory'},async()=>{await loadProducts();if(state.tab==='dashboard'||state.tab==='admin')await renderAll()})
+      .on('postgres_changes',{event:'*',schema:'public',table:'notes'},async()=>{await loadNotes();if(state.tab==='notes'||state.tab==='dashboard')await renderAll()})
       .subscribe();
   }
 
@@ -436,6 +536,7 @@ table.summary-table{width:100%;border-collapse:separate;border-spacing:0;overflo
   $('tab-dashboard').onclick=async()=>{state.tab='dashboard';await renderAll()};
   $('tab-log').onclick=async()=>{state.tab='log';await renderAll()};
   $('tab-list').onclick=async()=>{state.tab='list';await renderAll()};
+  $('tab-notes').onclick=async()=>{state.tab='notes';state.editingNoteId=null;await renderAll()};
   $('tab-summary').onclick=async()=>{state.tab='summary';await renderAll()};
   $('tab-admin').onclick=async()=>{state.tab='admin';await renderAll()};
   boot();
