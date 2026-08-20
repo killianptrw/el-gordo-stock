@@ -305,6 +305,79 @@
   }
   .cat-subtotal .val { font-family: 'Courier New', monospace; }
 
+
+  .shopping-add-btn {
+    width: 100%;
+    border: 0;
+    border-radius: 8px;
+    padding: 12px 14px;
+    background: var(--stamp);
+    color: #fff;
+    font-weight: 800;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .shopping-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .shopping-actions button {
+    flex: 1;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 8px;
+    background: var(--white);
+    color: var(--ink);
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .shopping-actions .primary {
+    background: var(--ink);
+    color: var(--white);
+    border-color: var(--ink);
+  }
+  .week-picker {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .week-picker button {
+    border:1px solid var(--line);
+    background:var(--white);
+    border-radius:7px;
+    width:38px;
+    height:34px;
+    font-size:20px;
+    cursor:pointer;
+  }
+  .week-picker .label {
+    flex:1;
+    text-align:center;
+    font-weight:800;
+    font-size:13px;
+  }
+  .shopping-row {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:10px 0;
+    border-bottom:1px dashed var(--line);
+  }
+  .shopping-row:last-child { border-bottom:0; }
+  .shopping-row .info { display:flex; align-items:center; min-width:0; }
+  .shopping-row .text { min-width:0; }
+  .shopping-row .item-name { font-weight:700; font-size:13px; }
+  .shopping-row .meta { font-size:11px; color:var(--ink-soft); margin-top:2px; }
+  .shopping-row .qty { font-family:'Courier New',monospace; font-weight:800; white-space:nowrap; }
+  .shopping-row .remove-list {
+    border:0; background:transparent; color:var(--ink-soft); padding:5px; font-size:15px; cursor:pointer;
+  }
+  .shopping-empty { text-align:center; padding:18px 8px; color:var(--ink-soft); font-size:12px; }
+
   .footer-note {
     text-align: center;
     font-size: 10.5px;
@@ -330,10 +403,12 @@
 
   <div class="tabs">
     <button id="tab-log" class="active">Log purchase</button>
+    <button id="tab-list">Shopping list</button>
     <button id="tab-summary">Monthly recap</button>
   </div>
 
   <div id="view-log"></div>
+  <div id="view-list" style="display:none;"></div>
   <div id="view-summary" style="display:none;"></div>
 
   <div class="footer-note">shared online • changes sync between phones</div>
@@ -349,6 +424,9 @@
   let state = {
     restaurant: 'union',
     tab: 'log',
+    listCategory: 'Kitchen',
+    listWeek: getMondayISO(new Date()),
+    shoppingItems: [],
     category: 'Kitchen',
     entries: [],
     summaryMonth: new Date().toISOString().slice(0, 7), // YYYY-MM
@@ -403,6 +481,9 @@
         await loadEntries();
         renderAll();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'shopping_list' }, async () => {
+        if (state.tab === 'list') await renderListView();
+      })
       .subscribe();
   }
 
@@ -434,7 +515,199 @@
     $('tab-log').classList.toggle('active', state.tab === 'log');
     $('tab-summary').classList.toggle('active', state.tab === 'summary');
     $('view-log').style.display = state.tab === 'log' ? 'block' : 'none';
+    $('view-list').style.display = state.tab === 'list' ? 'block' : 'none';
     $('view-summary').style.display = state.tab === 'summary' ? 'block' : 'none';
+  }
+
+
+  function getMondayISO(date) {
+    const d = new Date(date);
+    d.setHours(12, 0, 0, 0);
+    const day = d.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function shiftWeek(iso, delta) {
+    const d = new Date(iso + 'T12:00:00');
+    d.setDate(d.getDate() + (delta * 7));
+    return d.toISOString().slice(0, 10);
+  }
+
+  function weekLabel(iso) {
+    const start = new Date(iso + 'T12:00:00');
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    const opts = { month: 'short', day: 'numeric' };
+    return `${start.toLocaleDateString('en-US', opts)} – ${end.toLocaleDateString('en-US', { ...opts, year: 'numeric' })}`;
+  }
+
+  async function loadShoppingItems() {
+    if (!supabaseClient) { state.shoppingItems = []; return; }
+    try {
+      const { data, error } = await supabaseClient
+        .from('shopping_list')
+        .select('*')
+        .eq('restaurant', state.restaurant)
+        .eq('week_start', state.listWeek)
+        .order('category')
+        .order('created_at');
+      if (error) throw error;
+      state.shoppingItems = data || [];
+    } catch (e) {
+      console.error('Shopping list load error', e);
+      state.shoppingItems = [];
+    }
+  }
+
+  async function addShoppingItem() {
+    const item = $('s-item').value.trim();
+    const qty = parseFloat($('s-qty').value);
+    const unit = $('s-unit').value.trim();
+    if (!item || isNaN(qty) || qty <= 0) {
+      alert('Please enter an item and quantity.');
+      return;
+    }
+    const btn = $('s-add');
+    btn.disabled = true;
+    btn.textContent = 'Adding...';
+    const { error } = await supabaseClient.from('shopping_list').insert({
+      restaurant: state.restaurant,
+      category: state.listCategory,
+      item,
+      qty,
+      unit,
+      week_start: state.listWeek
+    });
+    if (error) {
+      console.error(error);
+      alert('Could not add this item. Make sure the shopping_list table has been created.');
+    } else {
+      await loadShoppingItems();
+      renderListView();
+    }
+    btn.disabled = false;
+    btn.textContent = 'Add to shopping list';
+  }
+
+  async function removeShoppingItem(id) {
+    if (!confirm('Remove this item from the shopping list?')) return;
+    const { error } = await supabaseClient.from('shopping_list').delete().eq('id', id);
+    if (error) {
+      console.error(error);
+      alert('Could not remove this item.');
+      return;
+    }
+    await loadShoppingItems();
+    renderListView();
+  }
+
+  function buildShoppingMessage() {
+    const grouped = {};
+    state.shoppingItems.forEach(x => {
+      (grouped[x.category] ||= []).push(x);
+    });
+    let out = `EL GORDO — SHOPPING LIST\n${RESTAURANTS[state.restaurant]}\nWeek: ${weekLabel(state.listWeek)}\n`;
+    CATEGORIES.forEach(cat => {
+      const rows = grouped[cat] || [];
+      if (!rows.length) return;
+      out += `\n${cat.toUpperCase()}\n`;
+      rows.forEach(x => { out += `• ${x.item} — ${fmtQty(Number(x.qty))}${x.unit ? ' ' + x.unit : ''}\n`; });
+    });
+    return out;
+  }
+
+  async function shareShoppingList() {
+    if (!state.shoppingItems.length) {
+      alert('The shopping list is empty.');
+      return;
+    }
+    const message = buildShoppingMessage();
+    if (navigator.share) {
+      try { await navigator.share({ title: 'El Gordo Shopping List', text: message }); }
+      catch (e) { if (e && e.name !== 'AbortError') console.error(e); }
+    } else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(message);
+      alert('Shopping list copied. You can paste it into Messages or WhatsApp.');
+    } else {
+      prompt('Copy this shopping list:', message);
+    }
+  }
+
+  async function renderListView() {
+    const el = $('view-list');
+    await loadShoppingItems();
+    const grouped = {};
+    state.shoppingItems.forEach(x => (grouped[x.category] ||= []).push(x));
+
+    el.innerHTML = `
+      <div class="card">
+        <div class="week-picker">
+          <button id="s-prev">‹</button>
+          <div class="label">WEEK OF ${weekLabel(state.listWeek).toUpperCase()}</div>
+          <button id="s-next">›</button>
+        </div>
+        <div class="cat-pills">
+          ${CATEGORIES.map(c => `<div class="cat-pill ${c === state.listCategory ? 'active' : ''}" data-list-cat="${c}">${c}</div>`).join('')}
+        </div>
+        <div class="field">
+          <label>Item to buy</label>
+          <input type="text" id="s-item" placeholder="e.g. Whole chicken">
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Quantity</label>
+            <input type="number" id="s-qty" placeholder="0" inputmode="decimal">
+          </div>
+          <div class="field">
+            <label>Unit</label>
+            <input type="text" id="s-unit" placeholder="kg, pack...">
+          </div>
+        </div>
+        <button class="shopping-add-btn" id="s-add">Add to shopping list</button>
+        <div class="shopping-actions">
+          <button class="primary" id="s-share">📤 Share list</button>
+        </div>
+      </div>
+
+      <div class="section-label">To buy — ${RESTAURANTS[state.restaurant]}</div>
+      <div class="card" style="padding: 6px 16px;">
+        ${state.shoppingItems.length === 0
+          ? '<div class="shopping-empty">No items on this week’s shopping list.</div>'
+          : CATEGORIES.map(cat => {
+              const rows = grouped[cat] || [];
+              if (!rows.length) return '';
+              return `<div class="summary-cat-header">
+                <div class="bar" style="background:${CAT_COLOR[cat]}"></div><span>${cat}</span>
+              </div>` + rows.map(x => `
+                <div class="shopping-row">
+                  <div class="info">
+                    <span class="dot" style="background:${CAT_COLOR[cat]}"></span>
+                    <div class="text">
+                      <div class="item-name">${escapeHtml(x.item)}</div>
+                      <div class="meta">${RESTAURANTS[state.restaurant]} · ${weekLabel(state.listWeek)}</div>
+                    </div>
+                  </div>
+                  <div style="display:flex;align-items:center;">
+                    <div class="qty">${fmtQty(Number(x.qty))} ${escapeHtml(x.unit || '')}</div>
+                    <button class="remove-list" data-list-del="${x.id}">✕</button>
+                  </div>
+                </div>
+              `).join('');
+            }).join('')}
+      </div>
+    `;
+
+    el.querySelectorAll('[data-list-cat]').forEach(p => p.addEventListener('click', () => {
+      state.listCategory = p.getAttribute('data-list-cat');
+      renderListView();
+    }));
+    $('s-add').addEventListener('click', addShoppingItem);
+    $('s-share').addEventListener('click', shareShoppingList);
+    $('s-prev').addEventListener('click', async () => { state.listWeek = shiftWeek(state.listWeek, -1); await renderListView(); });
+    $('s-next').addEventListener('click', async () => { state.listWeek = shiftWeek(state.listWeek, 1); await renderListView(); });
+    el.querySelectorAll('[data-list-del]').forEach(btn => btn.addEventListener('click', () => removeShoppingItem(btn.getAttribute('data-list-del'))));
   }
 
   function renderLogView() {
@@ -642,12 +915,14 @@
   function renderAll() {
     renderTabs();
     renderLogView();
+    if (state.tab === 'list') renderListView();
     renderSummaryView();
   }
 
   $('btn-union').addEventListener('click', () => { state.restaurant = 'union'; renderAll(); });
   $('btn-jersey').addEventListener('click', () => { state.restaurant = 'jersey'; renderAll(); });
   $('tab-log').addEventListener('click', () => { state.tab = 'log'; renderAll(); });
+  $('tab-list').addEventListener('click', () => { state.tab = 'list'; renderAll(); });
   $('tab-summary').addEventListener('click', () => { state.tab = 'summary'; renderAll(); });
 
   (async function init() {
