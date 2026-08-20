@@ -389,47 +389,15 @@
     font-family: 'Courier New', monospace;
   }
 
+
+  .sound-toggle {
+    position:absolute; right:12px; top:12px; border:1px solid var(--line);
+    background:var(--white); border-radius:999px; width:34px; height:34px;
+    font-size:16px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.06);
+  }
+  .sound-toggle:active { transform:scale(.92); }
+
   .loading { text-align: center; padding: 30px; color: var(--ink-soft); font-size: 13px; }
-
-  /* ===== Subtle app animations ===== */
-  @keyframes appReveal {
-    from { opacity: 0; transform: translateY(14px) scale(.985); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  @keyframes headerReveal {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes cardReveal {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes popIn {
-    0% { transform: scale(.92); opacity: 0; }
-    70% { transform: scale(1.03); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-  }
-  #app { animation: appReveal .55s cubic-bezier(.22,1,.36,1) both; }
-  .receipt-head { animation: headerReveal .5s ease-out .05s both; }
-  .restaurant-toggle, .tabs { animation: cardReveal .45s ease-out .12s both; }
-  .card { animation: cardReveal .45s cubic-bezier(.22,1,.36,1) both; }
-  .cat-pill, .add-btn, .shopping-add-btn { transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease; }
-  button:active { transform: scale(.97); }
-  .cat-pill:active, .add-btn:active, .shopping-add-btn:active { transform: scale(.98); }
-  .log-entry, .shopping-row, .summary-cat-header, .grand-total { animation: cardReveal .3s ease-out both; }
-  .tabs button, .restaurant-toggle button { transition: background .18s ease, color .18s ease, transform .12s ease; }
-  .tabs button.active, .restaurant-toggle button.active { animation: popIn .22s ease-out both; }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
-  }
-
-
-  .view-animated { animation: viewSwap .28s ease-out both; }
-  @keyframes viewSwap {
-    from { opacity: 0; transform: translateY(7px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
 </style>
 
 <div id="app">
@@ -437,6 +405,7 @@
     <div class="eyebrow">★ Stock Tracker ★</div>
     <h1>El Gordo</h1>
     <div class="sub">purchase log &amp; monthly recap</div>
+    <button id="sound-toggle" class="sound-toggle" type="button" aria-label="Toggle sounds">🔊</button>
   </div>
 
   <div class="restaurant-toggle">
@@ -450,9 +419,9 @@
     <button id="tab-summary">Monthly recap</button>
   </div>
 
-  <div id="view-log" class="view-animated"></div>
-  <div id="view-list" class="view-animated" style="display:none;"></div>
-  <div id="view-summary" class="view-animated" style="display:none;"></div>
+  <div id="view-log"></div>
+  <div id="view-list" style="display:none;"></div>
+  <div id="view-summary" style="display:none;"></div>
 
   <div class="footer-note">shared online • changes sync between phones</div>
 </div>
@@ -477,6 +446,62 @@
   };
 
   const $ = (id) => document.getElementById(id);
+
+  // ===== Subtle UI sounds =====
+  let soundsEnabled = localStorage.getItem('el_gordo_sounds') !== 'off';
+  let audioCtx = null;
+
+  function getAudioContext() {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      audioCtx = new AC();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+    return audioCtx;
+  }
+
+  function playTone(type = 'click') {
+    if (!soundsEnabled) return;
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const settings = {
+      click:  { f: 520, d: 0.055, v: 0.035 },
+      success:{ f: 760, d: 0.12,  v: 0.045 },
+      add:    { f: 620, d: 0.08,  v: 0.04 },
+      delete: { f: 240, d: 0.09,  v: 0.035 },
+      share:  { f: 680, d: 0.10,  v: 0.04 },
+      open:   { f: 420, d: 0.12,  v: 0.025 }
+    }[type] || { f: 520, d: 0.055, v: 0.035 };
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(settings.f, now);
+    gain.gain.setValueAtTime(settings.v, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + settings.d);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + settings.d + 0.01);
+  }
+
+  function soundTypeForButton(btn) {
+    const id = btn.id || '';
+    const text = (btn.textContent || '').trim().toLowerCase();
+    if (id === 'sound-toggle') return null;
+    if (id === 'export-excel' || text.includes('share list')) return 'share';
+    if (text.includes('add to log') || text.includes('add to shopping list')) return 'add';
+    if (text === '✕' || text.includes('delete') || text.includes('remove')) return 'delete';
+    if (id.startsWith('tab-') || id.startsWith('btn-') || id.startsWith('cat-')) return 'click';
+    return 'click';
+  }
+
+  document.addEventListener('click', (event) => {
+    const btn = event.target.closest && event.target.closest('button');
+    if (!btn) return;
+    const type = soundTypeForButton(btn);
+    if (type) playTone(type);
+  }, true);
 
   // ===== Online shared database (Supabase) =====
   // Replace these two values with the Project URL and Publishable key from Supabase.
@@ -1020,6 +1045,25 @@
   $('tab-log').addEventListener('click', () => { state.tab = 'log'; renderAll(); });
   $('tab-list').addEventListener('click', () => { state.tab = 'list'; renderAll(); });
   $('tab-summary').addEventListener('click', () => { state.tab = 'summary'; renderAll(); });
+
+  const soundToggle = $('sound-toggle');
+  function updateSoundToggle() {
+    if (!soundToggle) return;
+    soundToggle.textContent = soundsEnabled ? '🔊' : '🔇';
+    soundToggle.setAttribute('aria-label', soundsEnabled ? 'Turn sounds off' : 'Turn sounds on');
+  }
+  soundToggle?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    soundsEnabled = !soundsEnabled;
+    localStorage.setItem('el_gordo_sounds', soundsEnabled ? 'on' : 'off');
+    updateSoundToggle();
+    if (soundsEnabled) playTone('success');
+  });
+  updateSoundToggle();
+
+  let launchSoundPlayed = false;
+  const unlockSound = () => { if (!launchSoundPlayed && soundsEnabled) { launchSoundPlayed = true; playTone('open'); } document.removeEventListener('pointerdown', unlockSound, true); };
+  document.addEventListener('pointerdown', unlockSound, true);
 
   (async function init() {
     $('view-log').innerHTML = '<div class="loading">Loading...</div>';
