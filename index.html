@@ -1,0 +1,570 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#B5432E"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="El Gordo Stock"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-192.png"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script><style>
+:root{
+  --bg:#f5f2ed;
+  --surface:rgba(255,255,255,.82);
+  --surface-solid:#fff;
+  --surface-2:#eeeae3;
+  --ink:#171717;
+  --muted:#74706a;
+  --line:rgba(23,23,23,.08);
+  --brand:#b5432e;
+  --brand-2:#d36a4e;
+  --kitchen:#b8613d;
+  --back:#4d7896;
+  --front:#628b62;
+  --shadow:0 14px 45px rgba(28,24,20,.09);
+  --shadow-soft:0 7px 22px rgba(28,24,20,.07);
+  --radius:24px;
+  --radius-sm:17px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{margin:0;background:radial-gradient(circle at 20% -10%,rgba(181,67,46,.12),transparent 32%),radial-gradient(circle at 100% 0%,rgba(77,120,150,.10),transparent 28%),var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif;min-height:100vh}
+button,input,select{font:inherit}
+button{touch-action:manipulation}
+#app{max-width:560px;margin:0 auto;min-height:100vh;padding:12px 12px 42px;position:relative;overflow:hidden}
+#app:before{content:"";position:fixed;inset:0;pointer-events:none;background:linear-gradient(120deg,rgba(255,255,255,.22),transparent 42%);z-index:-1}
+
+/* Bento header */
+.receipt-head{position:relative;text-align:left;padding:18px 18px 20px;margin:0 0 10px;border:1px solid rgba(255,255,255,.72);border-radius:30px;background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(255,255,255,.62));box-shadow:var(--shadow-soft);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);overflow:hidden}
+.receipt-head:after{content:"";position:absolute;width:150px;height:150px;border-radius:50%;right:-48px;top:-70px;background:radial-gradient(circle,rgba(181,67,46,.2),rgba(181,67,46,0));pointer-events:none}
+.receipt-head .eyebrow{display:flex;align-items:center;gap:9px;font-size:10px;font-weight:800;letter-spacing:1.8px;color:var(--muted);text-transform:uppercase}
+.receipt-head .eyebrow:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 5px rgba(181,67,46,.11)}
+.receipt-head h1{font-size:36px;line-height:1;margin:9px 0 6px;font-weight:850;letter-spacing:-1.8px}
+.receipt-head .sub{font-size:12px;color:var(--muted);letter-spacing:.1px}
+.receipt-head:before{content:"";position:absolute;right:18px;bottom:16px;width:54px;height:54px;background:url('logo.png') center/contain no-repeat;opacity:.96;filter:drop-shadow(0 8px 12px rgba(0,0,0,.08))}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 4px 10px}
+.user-badge{display:inline-block;max-width:62%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:var(--muted);font-weight:600}
+.role-pill{display:inline-flex;align-items:center;border:1px solid var(--line);background:rgba(255,255,255,.72);border-radius:999px;padding:5px 9px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;box-shadow:0 3px 10px rgba(0,0,0,.03)}
+.icon-btn{border:1px solid var(--line);background:rgba(255,255,255,.78);border-radius:14px;padding:9px 11px;cursor:pointer;box-shadow:0 5px 14px rgba(0,0,0,.04);transition:transform .18s,background .18s}
+.icon-btn:active{transform:scale(.96)}
+
+/* Restaurant switcher */
+.restaurant-toggle{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 12px;padding:5px;border:1px solid var(--line);border-radius:19px;background:rgba(255,255,255,.56);box-shadow:var(--shadow-soft)}
+.restaurant-toggle button{border:0;border-radius:14px;padding:11px 7px;background:transparent;color:var(--muted);font-size:11px;font-weight:850;letter-spacing:.4px;cursor:pointer;transition:all .22s cubic-bezier(.2,.8,.2,1)}
+.restaurant-toggle button.active{color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand-2));box-shadow:0 7px 18px rgba(181,67,46,.25);transform:translateY(-1px)}
+.restaurant-toggle button:first-child{border-right:0}
+
+/* Bento navigation */
+.tabs{display:flex;gap:7px;margin:0 0 14px;padding:3px;overflow-x:auto;scrollbar-width:none;position:sticky;top:7px;z-index:20;background:rgba(245,242,237,.78);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.75);border-radius:18px;box-shadow:0 8px 25px rgba(0,0,0,.05)}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:0 0 auto;border:0;border-radius:14px;padding:9px 13px;background:transparent;color:var(--muted);font-size:11px;font-weight:800;cursor:pointer;transition:all .2s ease;white-space:nowrap}
+.tabs button.active{background:#171717;color:#fff;box-shadow:0 7px 16px rgba(0,0,0,.13)}
+
+/* Bento cards */
+.card,.stat,.alert-card{border:1px solid rgba(255,255,255,.86)!important;background:var(--surface)!important;box-shadow:var(--shadow-soft);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.card{margin:0 0 12px;border-radius:var(--radius);padding:18px}
+.dashboard-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:10px;margin:0 0 12px}
+.stat{min-height:116px;border-radius:22px;padding:17px;position:relative;overflow:hidden}
+.stat:nth-child(2){background:linear-gradient(145deg,#fff,rgba(255,244,239,.92))!important}
+.stat:nth-child(3){background:linear-gradient(145deg,#fff,rgba(242,249,242,.92))!important}
+.stat:nth-child(4){background:linear-gradient(145deg,#fff,rgba(240,247,252,.92))!important}
+.stat:first-child{grid-row:span 2;display:flex;flex-direction:column;justify-content:flex-end;background:linear-gradient(145deg,#1a1918,#3a332f)!important;color:#fff!important}
+.stat:first-child:after{content:"";position:absolute;width:130px;height:130px;right:-40px;top:-35px;border-radius:50%;background:radial-gradient(circle,rgba(211,106,78,.6),transparent 68%)}
+.stat .label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:850}
+.stat:first-child .label{color:rgba(255,255,255,.66)}
+.stat .value{font-size:26px;line-height:1.05;font-weight:850;letter-spacing:-1px;margin-top:7px;font-variant-numeric:tabular-nums}
+.stat:first-child .value{font-size:34px;position:relative;z-index:1}
+.alert-card{margin:0 0 12px;border-radius:22px;padding:15px;font-size:12px;background:linear-gradient(135deg,rgba(255,248,231,.96),rgba(255,255,255,.76))!important;border-color:rgba(218,185,100,.25)!important}
+.section-label{font-size:10px;font-weight:850;letter-spacing:1.3px;color:var(--muted);text-transform:uppercase;margin:0 0 10px}
+
+/* Forms */
+.field{margin-bottom:12px}.field label{display:block;font-size:10px;font-weight:850;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin:0 0 6px}
+.field input,.field select{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:15px;font-size:15px;background:rgba(255,255,255,.72);color:var(--ink);outline:none;transition:border-color .18s,box-shadow .18s,transform .18s}
+.field input:focus,.field select:focus{border-color:rgba(181,67,46,.45);box-shadow:0 0 0 4px rgba(181,67,46,.09);transform:translateY(-1px)}
+.row-2{display:flex;gap:10px}.row-2 .field{flex:1}
+.add-btn,.shopping-add-btn{width:100%;padding:14px;border:0;border-radius:16px;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;font-weight:850;font-size:14px;cursor:pointer;box-shadow:0 9px 20px rgba(181,67,46,.22);transition:transform .18s,box-shadow .18s}
+.add-btn:active,.shopping-add-btn:active{transform:scale(.985);box-shadow:0 5px 12px rgba(181,67,46,.18)}
+.add-btn:disabled{background:var(--surface-2);color:var(--muted);box-shadow:none}
+
+/* Category bento pills */
+.cat-pills{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.cat-pill{padding:12px 5px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.62);text-align:center;font-size:12px;font-weight:850;cursor:pointer;color:var(--muted);transition:all .2s cubic-bezier(.2,.8,.2,1)}
+.cat-pill.active[data-cat="Kitchen"]{background:linear-gradient(135deg,var(--kitchen),#d47a54);border-color:transparent;color:#fff;box-shadow:0 9px 18px rgba(184,97,61,.23);transform:translateY(-2px)}
+.cat-pill.active[data-cat="Back"]{background:linear-gradient(135deg,var(--back),#719bb8);border-color:transparent;color:#fff;box-shadow:0 9px 18px rgba(77,120,150,.23);transform:translateY(-2px)}
+.cat-pill.active[data-cat="Front"]{background:linear-gradient(135deg,var(--front),#7ba77b);border-color:transparent;color:#fff;box-shadow:0 9px 18px rgba(98,139,98,.23);transform:translateY(-2px)}
+.cat-pill.active:after{content:" ✓"}
+
+/* Buttons / actions */
+.shopping-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.shopping-actions button,.mini-btn,.week-picker button,.month-picker button{border:1px solid var(--line);border-radius:14px;padding:11px 10px;background:rgba(255,255,255,.7);color:var(--ink);font-weight:800;font-size:11px;cursor:pointer;transition:transform .18s,background .18s,box-shadow .18s}
+.shopping-actions button:active,.mini-btn:active,.week-picker button:active,.month-picker button:active{transform:scale(.97)}
+.shopping-actions .primary{background:#171717;color:#fff;border-color:#171717;box-shadow:0 7px 16px rgba(0,0,0,.13)}
+.mini-btn{font-size:11px}.danger{color:#9b2f1d;border-color:#e1b0a5}
+.week-picker,.month-picker{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.week-picker .label,.month-picker .label{flex:1;text-align:center;font-size:12px;font-weight:850;letter-spacing:.3px}.week-picker button,.month-picker button{width:38px;height:38px;padding:0;font-size:18px}
+
+
+/* Communications / notes */
+.notes-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.note-card{position:relative;border:1px solid rgba(255,255,255,.9);border-radius:22px;padding:15px;background:rgba(255,255,255,.78);box-shadow:var(--shadow-soft);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);overflow:hidden;animation:bentoIn .35s cubic-bezier(.2,.8,.2,1) both}
+.note-card.pinned{background:linear-gradient(145deg,rgba(255,248,231,.98),rgba(255,255,255,.78));border-color:rgba(218,185,100,.35)}
+.note-accent{position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:0 99px 99px 0}
+.note-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-left:5px}
+.note-title{font-size:14px;font-weight:850;letter-spacing:-.2px;line-height:1.2}
+.note-type{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;background:rgba(23,23,23,.055);font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);white-space:nowrap}
+.note-body{margin:9px 5px 10px;font-size:12px;line-height:1.5;color:var(--ink-soft,#5f5b55);white-space:pre-wrap;word-break:break-word}
+.note-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-left:5px;font-size:9px;color:var(--muted)}
+.note-actions{display:flex;gap:6px;margin:10px 5px 0}
+.note-actions button{border:1px solid var(--line);border-radius:12px;padding:8px 9px;background:rgba(255,255,255,.68);font-size:10px;font-weight:800;color:var(--ink);cursor:pointer}
+.note-actions button:active{transform:scale(.97)}
+.note-actions .pin{background:#171717;color:#fff;border-color:#171717}
+.notes-filter{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;margin-bottom:10px}.notes-filter::-webkit-scrollbar{display:none}
+.notes-filter button{flex:0 0 auto;border:1px solid var(--line);border-radius:999px;padding:8px 11px;background:rgba(255,255,255,.65);font-size:10px;font-weight:800;color:var(--muted)}
+.notes-filter button.active{background:#171717;color:#fff;border-color:#171717}
+.note-compose{background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(248,244,239,.78))!important}
+.note-compose textarea{width:100%;min-height:110px;resize:vertical;padding:13px 14px;border:1px solid var(--line);border-radius:15px;font-size:14px;background:rgba(255,255,255,.72);color:var(--ink);outline:none;transition:border-color .18s,box-shadow .18s}
+.note-compose textarea:focus{border-color:rgba(181,67,46,.45);box-shadow:0 0 0 4px rgba(181,67,46,.09)}
+.notes-empty{text-align:center;color:var(--muted);padding:28px 10px;font-size:12px}
+.pin-mark{font-size:11px}
+
+/* Lists */
+.log-entry,.shopping-row,.product-row,.audit-row{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:12px 0;border-bottom:1px solid rgba(23,23,23,.07)}
+.log-entry:last-child,.shopping-row:last-child,.product-row:last-child,.audit-row:last-child{border-bottom:0}
+.log-entry .info,.shopping-row .info{display:flex;align-items:center;min-width:0}.log-entry .text,.shopping-row .text{min-width:0}.log-entry .item-name,.shopping-row .item-name{font-weight:800;font-size:13px}.log-entry .meta,.shopping-row .meta{font-size:10px;color:var(--muted);margin-top:3px}.log-entry .amount,.shopping-row .qty{font-weight:850;font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}.log-entry .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:9px;flex-shrink:0}.log-entry .del,.shopping-row .remove-list{border:0;background:transparent;color:var(--muted);font-size:15px;padding:5px;cursor:pointer}
+.shopping-empty,.empty-note{text-align:center;color:var(--muted);font-size:12px;padding:24px 10px}
+.summary-cat-header{display:flex;align-items:center;gap:8px;margin:18px 0 8px}.summary-cat-header .bar{width:7px;height:22px;border-radius:99px}.summary-cat-header span{font-size:11px;font-weight:850;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+table.summary-table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.46)}table.summary-table th{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);padding:9px;border-bottom:1px solid var(--line)}table.summary-table td{padding:10px 9px;font-size:12px;border-bottom:1px solid rgba(23,23,23,.06)}table.summary-table tr:last-child td{border-bottom:0}table.summary-table th:not(:first-child),table.summary-table td:not(:first-child){text-align:right}table.summary-table td.item-cell{font-weight:750}table.summary-table td.num-cell{font-variant-numeric:tabular-nums}
+.cat-subtotal{display:flex;justify-content:space-between;padding:9px 12px;margin:7px 0 15px;background:rgba(238,234,227,.72);border-radius:12px;font-size:11px;font-weight:800}.cat-subtotal .val{font-variant-numeric:tabular-nums}.grand-total{display:flex;justify-content:space-between;padding:15px 0 2px;margin-top:8px;border-top:1px solid var(--line);font-weight:850;font-size:16px}.grand-total .val{font-variant-numeric:tabular-nums}
+
+/* Dashboard charts */
+.bar-row{display:grid;grid-template-columns:62px 1fr 62px;align-items:center;gap:8px;margin:9px 0;font-size:10px;font-weight:750}.bar-track{height:10px;background:rgba(23,23,23,.06);border-radius:99px;overflow:hidden}.bar-fill{height:100%;border-radius:99px}
+.progress{height:9px;background:rgba(23,23,23,.06);border-radius:99px;overflow:hidden;margin-top:8px}.progress span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--brand),var(--brand-2))}
+.stock-low{color:#b13b26;font-weight:850}.stock-ok{color:#4f7a4f;font-weight:850}.audit-row{display:block;font-size:11px}.footer-note{text-align:center;font-size:9.5px;color:var(--muted);padding:12px 24px 0;letter-spacing:.2px}
+
+/* Auth screen */
+.auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at 50% 0,rgba(181,67,46,.15),transparent 38%),var(--bg)}
+.auth-card{width:100%;max-width:420px;background:rgba(255,255,255,.78);border:1px solid rgba(255,255,255,.88);border-radius:30px;padding:28px 22px;box-shadow:var(--shadow);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.auth-logo{width:92px;height:92px;object-fit:contain;border-radius:25px;display:block;margin:0 auto 15px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.08))}.auth-card h2{text-align:center;margin:5px 0 5px;font-size:29px;letter-spacing:-1px}.auth-card .hint{text-align:center;color:var(--muted);font-size:12px;margin:0 0 20px}.auth-error{background:#fff0ed;color:#9b2f1d;border:1px solid #e8b2a7;padding:10px;border-radius:14px;font-size:12px;margin-bottom:12px;display:none}
+.loading{text-align:center;padding:32px;color:var(--muted);font-size:13px}
+.admin-only{display:none}
+
+/* Modern micro-interactions */
+.card,.stat,.alert-card{animation:bentoIn .38s cubic-bezier(.2,.8,.2,1) both}.dashboard-grid .stat:nth-child(2){animation-delay:.03s}.dashboard-grid .stat:nth-child(3){animation-delay:.06s}.dashboard-grid .stat:nth-child(4){animation-delay:.09s}
+@keyframes bentoIn{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media (max-width:420px){#app{padding:8px 10px 36px}.receipt-head h1{font-size:32px}.dashboard-grid{grid-template-columns:1fr 1fr}.stat{min-height:104px;padding:14px}.stat:first-child{grid-column:span 2;grid-row:auto;min-height:126px}.stat:first-child .value{font-size:32px}.shopping-actions{grid-template-columns:1fr 1fr}.tabs button{padding:9px 11px}}
+@media (max-width:350px){.dashboard-grid{grid-template-columns:1fr}.stat:first-child{grid-column:auto}.row-2{gap:7px}}
+
+    .summary-sub-header{display:flex;justify-content:space-between;align-items:center;margin:12px 0 6px;padding:9px 11px;border-radius:14px;background:var(--surface-2);font-size:12px;font-weight:700;color:var(--ink)}
+    .summary-sub-header span:last-child{font-size:11px;color:var(--ink-soft);font-weight:600}
+    .summary-table{margin-bottom:8px}
+</style></head><body>
+<div id="auth" class="auth-screen">
+  <div class="auth-card">
+    <img class="auth-logo" src="logo.png" onerror="this.style.display='none'">
+    <h2>El Gordo Stock</h2>
+    <p class="hint">Secure restaurant management</p>
+    <div id="auth-error" class="auth-error"></div>
+    <div class="field"><label>Email</label><input id="auth-email" type="email" autocomplete="username" placeholder="you@example.com"></div>
+    <div class="field"><label>Password</label><input id="auth-password" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+    <button id="auth-signin" class="add-btn">Sign in</button>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="receipt-head">
+    <div class="eyebrow">★ Stock Tracker ★</div>
+    <h1>El Gordo</h1>
+    <div class="sub">stock · purchases · team communications</div><div style="display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.66);border:1px solid rgba(23,23,23,.07);font-size:10px;font-weight:800;color:#6f6a64"><span style="width:7px;height:7px;border-radius:50%;background:#5c9b67;box-shadow:0 0 0 4px rgba(92,155,103,.11)"></span> Live sync</div>
+  </div>
+  <div class="topbar">
+    <div><span id="user-email" class="user-badge"></span> <span id="role-pill" class="role-pill"></span></div>
+    <button id="signout" class="icon-btn">↪ Sign out</button>
+  </div>
+  <div class="restaurant-toggle">
+    <button id="btn-union" class="active">UNION NJ</button>
+    <button id="btn-jersey">JERSEY CITY</button>
+  </div>
+  <div class="tabs">
+    <button id="tab-dashboard" class="active">Dashboard</button>
+    <button id="tab-log">Log purchase</button>
+    <button id="tab-list">Shopping list</button>
+    <button id="tab-notes">📌 Notes</button>
+    <button id="tab-summary">Recap</button>
+    <button id="tab-admin" class="admin-only">Admin</button>
+  </div>
+  <div id="view-dashboard"></div>
+  <div id="view-log" style="display:none;"></div>
+  <div id="view-list" style="display:none;"></div>
+  <div id="view-notes" style="display:none;"></div>
+  <div id="view-summary" style="display:none;"></div>
+  <div id="view-admin" style="display:none;"></div>
+  <div class="footer-note">shared online • secure accounts • changes sync between phones</div>
+</div>
+
+<script>
+(function(){
+  const CATEGORIES=['Kitchen','Back','Front'];
+  const SUBCATEGORIES=['Packaging & To-Go Supplies','Fresh Produce & Groceries','Beverages','Cleaning & Sanitation Supplies'];
+  const UNITS=['Pack','Case','Box','Bag','Bottle','Can','Piece','Gallon','Pound','Carton','Other'];
+  const CAT_COLOR={Kitchen:'#A15A34',Back:'#3D6B8C',Front:'#4F7A4F'};
+  const RESTAURANTS={union:'El Gordo Union NJ',jersey:'El Gordo Jersey City'};
+  const SUPABASE_URL='https://suidbjuzmuorfatgjppu.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY='sb_publishable_AnO5X-rlrLVlBHcIxsiH7A_dlikRUQI';
+  const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+  const $=id=>document.getElementById(id);
+  let user=null, profile=null;
+  let state={restaurant:'union',tab:'dashboard',category:'Kitchen',listCategory:'Kitchen',listWeek:getMondayISO(new Date()),summaryMonth:new Date().toISOString().slice(0,7),entries:[],shoppingItems:[],products:[],audit:[],notes:[],noteFilter:'all',editingNoteId:null};
+
+  function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+  function money(n){return '$'+(Math.round(Number(n||0)*100)/100).toFixed(2)}
+  function qty(n){return (Math.round(Number(n||0)*100)/100).toString()}
+  function today(){return new Date().toISOString().slice(0,10)}
+  function monday(d){d=new Date(d);d.setHours(12,0,0,0);let day=d.getDay();d.setDate(d.getDate()+(day===0?-6:1-day));return d.toISOString().slice(0,10)}
+  function getMondayISO(d){return monday(d)}
+  function shiftWeek(i,n){let d=new Date(i+'T12:00:00');d.setDate(d.getDate()+7*n);return d.toISOString().slice(0,10)}
+  function weekLabel(i){let s=new Date(i+'T12:00:00'),e=new Date(s);e.setDate(e.getDate()+6);return `${s.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${e.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`}
+  function monthLabel(ym){let [y,m]=ym.split('-').map(Number);return new Date(y,m-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'})}
+  function shiftMonth(ym,n){let [y,m]=ym.split('-').map(Number);m+=n;if(m<1){m=12;y--}if(m>12){m=1;y++}return `${y}-${String(m).padStart(2,'0')}`}
+  function isAdmin(){return profile?.role==='admin'}
+  function canEdit(){return ['admin','manager','employee'].includes(profile?.role)}
+  function canManage(){return ['admin','manager'].includes(profile?.role)}
+
+  async function audit(action,entity,details={}){
+    try{
+      await db.from('audit_logs').insert({user_id:user.id,action,table_name:entity,record_id:details?.id?String(details.id):null,details:{...details,user_email:user?.email||''}})
+    }catch(e){console.warn('audit',e)}
+  }
+  async function loadEntries(){
+    const {data,error}=await db.from('purchases').select('*').order('date',{ascending:false}).order('created_at',{ascending:false});
+    if(error){console.error(error);return}
+    state.entries=(data||[]).map(e=>({...e,qty:Number(e.qty),price:Number(e.price),subcategory:e.subcategory||''}));
+  }
+  async function loadShopping(){
+    const {data,error}=await db.from('shopping_list').select('*').eq('restaurant',state.restaurant).eq('week_start',state.listWeek).order('category').order('created_at');
+    if(!error) state.shoppingItems=data||[];
+  }
+  async function loadNotes(){
+    const {data,error}=await db.from('notes').select('*').eq('restaurant',state.restaurant).order('pinned',{ascending:false}).order('updated_at',{ascending:false});
+    state.notes=error?[]:(data||[]);
+  }
+  async function loadProducts(){
+    const {data,error}=await db.from('inventory').select('*').eq('restaurant',state.restaurant).order('item');
+    state.products=error?[]:data||[];
+  }
+  async function loadProfiles(){
+    const {data,error}=await db.from('profiles').select('*').order('email');
+    return error?[]:(data||[]);
+  }
+  async function updateRole(id,role){
+    const {error}=await db.from('profiles').update({role}).eq('id',id);
+    if(error)return alert(error.message);
+    await audit('role_change','profile',{id,role});
+    await renderAdmin();
+  }
+  async function loadAudit(){
+    const {data,error}=await db.from('audit_logs').select('*').order('created_at',{ascending:false}).limit(100);
+    state.audit=error?[]:data||[];
+  }
+
+  function renderNav(){
+    ['dashboard','log','list','notes','summary','admin'].forEach(t=>{let b=$('tab-'+t);if(b)b.classList.toggle('active',state.tab===t)});
+    $('view-dashboard').style.display=state.tab==='dashboard'?'block':'none';
+    $('view-log').style.display=state.tab==='log'?'block':'none';
+    $('view-list').style.display=state.tab==='list'?'block':'none';
+    $('view-notes').style.display=state.tab==='notes'?'block':'none';
+    $('view-summary').style.display=state.tab==='summary'?'block':'none';
+    $('view-admin').style.display=state.tab==='admin'?'block':'none';
+    $('btn-union').classList.toggle('active',state.restaurant==='union');
+    $('btn-jersey').classList.toggle('active',state.restaurant==='jersey');
+    $('tab-admin').style.display=isAdmin()?'block':'none';
+  }
+
+  function noteTypeInfo(type){
+    const m={important:['📌','Important','#b8862c'],communication:['📢','Communication','#4d7896'],note:['📝','Note','#6b6b6b'],urgent:['⚠️','Urgent','#b5432e'],event:['📅','Event','#628b62']};
+    return m[type]||m.note;
+  }
+  function formatNoteDate(v){return new Date(v).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}
+  function renderPinnedDashboard(){
+    const pinned=state.notes.filter(n=>n.pinned).slice(0,3);
+    return `<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font-weight:800">📌 Pinned information</div><button class="mini-btn" id="dash-notes">View all</button></div>${pinned.length?`<div class="notes-grid" style="margin-top:9px">${pinned.map(n=>{const [ico,label,color]=noteTypeInfo(n.type);return `<div class="note-card pinned"><span class="note-accent" style="background:${color}"></span><div class="note-head"><div><div class="note-title">${ico} ${esc(n.title)}</div><div class="note-body">${esc(n.body)}</div></div><span class="pin-mark">📌</span></div><div class="note-meta"><span>${esc(label)} · ${formatNoteDate(n.updated_at)}</span><span>${esc(n.updated_by_email||n.created_by_email||'')}</span></div></div>`}).join('')}</div>`:'<div class="notes-empty" style="padding:16px 4px">No pinned information yet.</div>'}</div>`;
+  }
+
+  async function renderDashboard(){
+    await loadProducts();
+    const week=monday(new Date()), weekEntries=state.entries.filter(e=>e.restaurant===state.restaurant && e.date>=week);
+    const spend=weekEntries.reduce((s,e)=>s+e.qty*e.price,0);
+    const low=state.products.filter(p=>Number(p.current_qty)<Number(p.min_qty));
+    const pending=state.shoppingItems.length;
+    const catTotals=CATEGORIES.map(c=>({c,total:weekEntries.filter(e=>e.category===c).reduce((s,e)=>s+e.qty*e.price,0)}));
+    const max=Math.max(...catTotals.map(x=>x.total),1);
+    $('view-dashboard').innerHTML=`
+      <div class="dashboard-grid">
+        <div class="stat"><div class="label">This week</div><div class="value">${money(spend)}</div></div>
+        <div class="stat"><div class="label">Shopping items</div><div class="value">${pending}</div></div>
+        <div class="stat"><div class="label">Low stock</div><div class="value">${low.length}</div></div>
+        <div class="stat"><div class="label">Purchases</div><div class="value">${weekEntries.length}</div></div>
+      </div>
+      ${low.length?`<div class="alert-card"><strong>⚠️ Low stock</strong><div style="margin-top:6px">${low.slice(0,8).map(p=>`• ${esc(p.item)} — ${qty(p.current_qty)} ${esc(p.unit)} / min ${qty(p.min_qty)}`).join('<br>')}</div><button class="mini-btn" id="generate-smart" style="margin-top:10px">✨ Generate shopping list</button></div>`:''}
+      <div class="card"><div class="section-label" style="margin:0 0 8px">This week by area</div>
+        ${catTotals.map(x=>`<div class="bar-row"><span>${x.c}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(x.total/max*100)}%;background:${CAT_COLOR[x.c]}"></div></div><b>${money(x.total)}</b></div>`).join('')}
+      </div>
+      <div class="alert-card" style="background:#fff;border-color:var(--line)">
+        <strong>📅 Weekly order reminder</strong>
+        <div style="margin-top:5px;color:var(--ink-soft)">Use this reminder when you prepare the weekly order for your patronne.</div>
+        <button class="mini-btn" id="reminder-btn" style="margin-top:9px">Enable reminder</button>
+      </div>
+      ${renderPinnedDashboard()}
+      <div class="card">
+        <div style="font-weight:800;margin-bottom:8px">Quick actions</div>
+        <div class="shopping-actions">
+          <button id="dash-log">➕ Purchase</button><button id="dash-list" class="primary">🛒 Shopping list</button>
+        </div>
+        <div class="shopping-actions">
+          <button id="dash-report">📄 Report / PDF</button><button id="dash-backup">💾 Backup data</button>
+        </div>
+      </div>`;
+    $('dash-log').onclick=()=>{state.tab='log';renderAll()};
+    $('dash-list').onclick=()=>{state.tab='list';renderAll()};
+    $('dash-report').onclick=exportReport;
+    $('dash-backup').onclick=exportBackup;
+    const g=$('generate-smart'); if(g)g.onclick=generateSmartList;
+    const rb=$('reminder-btn');
+    if(rb){
+      rb.textContent=localStorage.getItem('elgordo_weekly_reminder')==='1'?'✓ Reminder enabled':'Enable reminder';
+      rb.onclick=()=>{localStorage.setItem('elgordo_weekly_reminder','1');rb.textContent='✓ Reminder enabled';alert('Reminder enabled on this device. Open the app on your weekly order day to see the reminder.');};
+    }
+  }
+
+  function catPills(selected,attr){return CATEGORIES.map(c=>`<div class="cat-pill ${c===selected?'active':''}" data-${attr}="${c}">${c}</div>`).join('')}
+
+  function renderLog(){
+    const entries=state.entries.filter(e=>e.restaurant===state.restaurant).slice(0,40);
+    $('view-log').innerHTML=`<div class="card"><div class="cat-pills">${catPills(state.category,'cat')}</div>
+      <div class="field"><label>Item</label><input id="f-item" placeholder="e.g. Whole chicken"></div>
+      <div class="row-2"><div class="field"><label>Quantity</label><input id="f-qty" type="number" step="0.01" inputmode="decimal"></div><div class="field"><label>Unit</label><select id="f-unit">${UNITS.map(u=>`<option value="${u}">${u}</option>`).join('')}<option value="">Custom...</option></select></div></div><div class="field"><label>Subcategory</label><select id="f-subcategory"><option value="">Select a subcategory</option>${SUBCATEGORIES.map(x=>`<option value="${x}">${x}</option>`).join('')}</select></div>
+      <div class="row-2"><div class="field"><label>Unit price ($)</label><input id="f-price" type="number" step="0.01" inputmode="decimal"></div><div class="field"><label>Date</label><input id="f-date" type="date" value="${today()}"></div></div>
+      <button class="add-btn" id="f-add">Add to log</button></div>
+      <div class="section-label">Recent — ${RESTAURANTS[state.restaurant]}</div>
+      <div class="card" style="padding:6px 16px">${entries.length?entries.map(e=>`<div class="log-entry"><div class="info"><span class="dot" style="background:${CAT_COLOR[e.category]}"></span><div class="text"><div class="item-name">${esc(e.item)}</div><div class="meta">${e.date} · ${qty(e.qty)} ${esc(e.unit)} · ${e.category}${e.subcategory?` · ${esc(e.subcategory)}`:''}</div></div></div><div style="display:flex;align-items:center"><div class="amount">${money(e.qty*e.price)}</div>${canManage()?`<button class="del" data-del="${e.id}">✕</button>`:''}</div></div>`).join(''):'<div class="empty-note">No purchases logged yet.</div>'}</div>`;
+    document.querySelectorAll('[data-cat]').forEach(x=>x.onclick=()=>{state.category=x.dataset.cat;renderLog()});
+    $('f-add').onclick=addPurchase;
+    document.querySelectorAll('[data-del]').forEach(x=>x.onclick=()=>deletePurchase(x.dataset.del));
+  }
+
+  async function addPurchase(){
+    if(!canEdit())return alert('Your account is read-only.');
+    const item=$('f-item').value.trim(), q=Number($('f-qty').value), unit=$('f-unit').value, subcategory=$('f-subcategory').value, price=Number($('f-price').value), date=$('f-date').value||today();
+    if(!item||!q||!unit||!subcategory||isNaN(price))return alert('Please fill Item, Quantity, Unit, Subcategory and Unit price.');
+    const {data,error}=await db.from('purchases').insert({restaurant:state.restaurant,category:state.category,subcategory,item,qty:q,unit,price,date}).select().single();
+    if(error)return alert(error.message);
+    await audit('create','purchase',{id:data.id,item,qty:q,restaurant:state.restaurant});
+    const existing=state.products.find(p=>p.item.toLowerCase()===item.toLowerCase()&&p.category===state.category);
+    if(existing){await db.from('inventory').update({current_qty:Number(existing.current_qty)+q,updated_at:new Date().toISOString()}).eq('id',existing.id);await audit('stock_in','inventory',{item,qty:q})}
+    await refresh();
+  }
+
+  async function deletePurchase(id){
+    if(!confirm('Delete this purchase?'))return;
+    const {error}=await db.from('purchases').delete().eq('id',id);if(error)return alert(error.message);
+    await audit('delete','purchase',{id});await refresh();
+  }
+
+  async function renderList(){
+    await loadShopping();
+    const grouped={};state.shoppingItems.forEach(x=>(grouped[x.category]??=[]).push(x));
+    $('view-list').innerHTML=`<div class="card"><div class="week-picker"><button id="s-prev">‹</button><div class="label">WEEK OF ${weekLabel(state.listWeek).toUpperCase()}</div><button id="s-next">›</button></div>
+      <div class="cat-pills">${catPills(state.listCategory,'listcat')}</div>
+      <div class="field"><label>Item to buy</label><input id="s-item" placeholder="e.g. Rice"></div>
+      <div class="row-2"><div class="field"><label>Quantity</label><input id="s-qty" type="number" inputmode="decimal"></div><div class="field"><label>Unit</label><input id="s-unit" placeholder="bag, box..."></div></div>
+      <button class="shopping-add-btn" id="s-add">Add to shopping list</button>
+      <div class="shopping-actions"><button class="primary" id="s-share">📤 Send to patronne</button><button id="s-smart">✨ Smart list</button></div></div>
+      <div class="section-label">To buy — ${RESTAURANTS[state.restaurant]}</div><div class="card" style="padding:6px 16px">${state.shoppingItems.length?CATEGORIES.map(c=>(grouped[c]||[]).length?`<div class="summary-cat-header"><div class="bar" style="background:${CAT_COLOR[c]}"></div><span>${c}</span></div>`+(grouped[c]||[]).map(x=>`<div class="shopping-row"><div class="info"><span class="dot" style="background:${CAT_COLOR[c]}"></span><div class="text"><div class="item-name">${esc(x.item)}</div><div class="meta">${weekLabel(state.listWeek)}</div></div></div><div style="display:flex;align-items:center"><div class="qty">${qty(x.qty)} ${esc(x.unit||'')}</div>${canManage()?`<button class="remove-list" data-rm="${x.id}">✕</button>`:''}</div></div>`).join(''):'').join(''):'<div class="shopping-empty">No items.</div>'}</div>`;
+    document.querySelectorAll('[data-listcat]').forEach(x=>x.onclick=()=>{state.listCategory=x.dataset.listcat;renderList()});
+    $('s-add').onclick=addShopping; $('s-share').onclick=shareList; $('s-smart').onclick=generateSmartList;
+    $('s-prev').onclick=async()=>{state.listWeek=shiftWeek(state.listWeek,-1);await renderList()};
+    $('s-next').onclick=async()=>{state.listWeek=shiftWeek(state.listWeek,1);await renderList()};
+    document.querySelectorAll('[data-rm]').forEach(x=>x.onclick=()=>removeShopping(x.dataset.rm));
+  }
+
+  async function addShopping(){
+    const item=$('s-item').value.trim(),q=Number($('s-qty').value),unit=$('s-unit').value.trim();if(!item||!q)return alert('Enter item and quantity.');
+    const {data,error}=await db.from('shopping_list').insert({restaurant:state.restaurant,category:state.listCategory,item,qty:q,unit,week_start:state.listWeek}).select().single();
+    if(error)return alert(error.message);await audit('create','shopping_list',{id:data.id,item,qty:q});await renderList();
+  }
+  async function removeShopping(id){if(!confirm('Remove this item?'))return;const {error}=await db.from('shopping_list').delete().eq('id',id);if(error)return alert(error.message);await audit('delete','shopping_list',{id});await renderList()}
+  async function generateSmartList(){
+    await loadProducts();
+    const low=state.products.filter(p=>Number(p.current_qty)<Number(p.min_qty));
+    if(!low.length)return alert('No products are below their minimum stock.');
+    for(const p of low){const need=Math.max(0,Number(p.min_qty)-Number(p.current_qty));await db.from('shopping_list').insert({restaurant:state.restaurant,category:p.category,item:p.item,qty:need,unit:p.unit||'',week_start:state.listWeek});await audit('smart_add','shopping_list',{item:p.item,qty:need})}
+    state.tab='list';await renderAll();
+  }
+  function buildListText(){let out=`EL GORDO — SHOPPING LIST\n${RESTAURANTS[state.restaurant]}\nWeek: ${weekLabel(state.listWeek)}\n`;for(const c of CATEGORIES){const rows=state.shoppingItems.filter(x=>x.category===c);if(!rows.length)continue;out+=`\n${c.toUpperCase()}\n`;rows.forEach(x=>out+=`• ${x.item} — ${qty(x.qty)}${x.unit?' '+x.unit:''}\n`)}return out}
+  async function shareList(){await loadShopping();if(!state.shoppingItems.length)return alert('Shopping list is empty.');const text=buildListText();if(navigator.share){try{await navigator.share({title:'El Gordo Shopping List',text})}catch(e){}}else{await navigator.clipboard?.writeText(text);alert('List copied.')}}
+
+  async function renderNotes(){
+    await loadNotes();
+    const filtered=state.noteFilter==='all'?state.notes:state.notes.filter(n=>n.type===state.noteFilter);
+    const editing=state.editingNoteId?state.notes.find(n=>String(n.id)===String(state.editingNoteId)):null;
+    const canWrite=canEdit();
+    $('view-notes').innerHTML=`
+      <div class="card note-compose">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px"><div><div class="section-label" style="margin-bottom:3px">Team board</div><div style="font-size:18px;font-weight:850">📌 Communications</div></div><span class="role-pill">${RESTAURANTS[state.restaurant]}</span></div>
+        ${canWrite?`<div class="field"><label>Type</label><select id="n-type"><option value="important">📌 Important</option><option value="communication">📢 Communication</option><option value="note">📝 Note</option><option value="urgent">⚠️ Urgent</option><option value="event">📅 Event</option></select></div>
+        <div class="field"><label>Title</label><input id="n-title" maxlength="100" placeholder="e.g. Delivery moved to 2 PM"></div>
+        <div class="field"><label>Message</label><textarea id="n-body" maxlength="1000" placeholder="Write the information your team needs to see..."></textarea></div>
+        <div class="shopping-actions"><button id="n-cancel" style="display:${editing?'block':'none'}">Cancel edit</button><button class="primary" id="n-save">${editing?'Save changes':'Publish note'}</button></div>`:'<div class="notes-empty">Your account is view-only. You can read communications but cannot publish them.</div>'}
+      </div>
+      <div class="card" style="padding:14px">
+        <div class="notes-filter">${[['all','All'],['important','📌 Important'],['communication','📢 Communication'],['note','📝 Notes'],['urgent','⚠️ Urgent'],['event','📅 Events']].map(([v,l])=>`<button data-note-filter="${v}" class="${state.noteFilter===v?'active':''}">${l}</button>`).join('')}</div>
+        <div class="notes-grid">${filtered.length?filtered.map((n,i)=>{const [ico,label,color]=noteTypeInfo(n.type);const own=String(n.created_by)===String(user.id);const manage=canManage()||own;return `<div class="note-card ${n.pinned?'pinned':''}" style="animation-delay:${Math.min(i,8)*.03}s"><span class="note-accent" style="background:${color}"></span><div class="note-head"><div><div class="note-title">${ico} ${esc(n.title)}</div><div style="margin-top:5px"><span class="note-type">${label}</span>${n.pinned?'<span class="note-type" style="margin-left:5px">📌 Pinned</span>':''}</div></div></div><div class="note-body">${esc(n.body)}</div><div class="note-meta"><span>${formatNoteDate(n.updated_at)} · ${esc(n.updated_by_email||n.created_by_email||'')}</span><span>${n.updated_at!==n.created_at?'Edited':''}</span></div>${manage?`<div class="note-actions"><button class="pin" data-note-pin="${n.id}">${n.pinned?'📌 Unpin':'📌 Pin'}</button><button data-note-edit="${n.id}">✏️ Edit</button><button class="danger" data-note-delete="${n.id}">🗑 Delete</button></div>`:''}</div>`}).join(''):'<div class="notes-empty">No communications yet. Publish the first one above.</div>'}</div>
+      </div>`;
+    if(!canWrite)return;
+    if(editing){$('n-type').value=editing.type;$('n-title').value=editing.title;$('n-body').value=editing.body}
+    $('n-save').onclick=saveNote;
+    $('n-cancel').onclick=()=>{state.editingNoteId=null;renderNotes()};
+    document.querySelectorAll('[data-note-filter]').forEach(b=>b.onclick=()=>{state.noteFilter=b.dataset.noteFilter;renderNotes()});
+    document.querySelectorAll('[data-note-edit]').forEach(b=>b.onclick=()=>{state.editingNoteId=b.dataset.noteEdit;renderNotes();$('view-notes').scrollIntoView({behavior:'smooth',block:'start'})});
+    document.querySelectorAll('[data-note-delete]').forEach(b=>b.onclick=()=>deleteNote(b.dataset.noteDelete));
+    document.querySelectorAll('[data-note-pin]').forEach(b=>b.onclick=()=>togglePin(b.dataset.notePin));
+    $('dash-notes')?.addEventListener('click',()=>{state.tab='notes';renderAll()});
+  }
+  async function saveNote(){
+    const type=$('n-type').value,title=$('n-title').value.trim(),body=$('n-body').value.trim();
+    if(!title||!body)return alert('Please add a title and message.');
+    if(!canEdit())return;
+    let error,data;
+    if(state.editingNoteId){
+      ({error}=await db.from('notes').update({type,title,body,updated_by:user.id,updated_by_email:user.email,updated_at:new Date().toISOString()}).eq('id',state.editingNoteId));
+      if(error)return alert(error.message);await audit('update','notes',{id:state.editingNoteId,title});
+    }else{
+      ({data,error}=await db.from('notes').insert({restaurant:state.restaurant,type,title,body,pinned:false,created_by:user.id,created_by_email:user.email,updated_by:user.id,updated_by_email:user.email}).select().single());
+      if(error)return alert(error.message);await audit('create','notes',{id:data.id,title});
+    }
+    state.editingNoteId=null;await renderAll();
+  }
+  async function deleteNote(id){
+    const n=state.notes.find(x=>String(x.id)===String(id));if(!n)return;
+    if(!(canManage()||String(n.created_by)===String(user.id)))return alert('You cannot delete this note.');
+    if(!confirm(`Delete “${n.title}”?`))return;
+    const {error}=await db.from('notes').delete().eq('id',id);if(error)return alert(error.message);await audit('delete','notes',{id,title:n.title});await renderNotes();
+  }
+  async function togglePin(id){
+    const n=state.notes.find(x=>String(x.id)===String(id));if(!n)return;
+    if(!(canManage()||String(n.created_by)===String(user.id)))return alert('You cannot pin this note.');
+    const {error}=await db.from('notes').update({pinned:!n.pinned,updated_by:user.id,updated_by_email:user.email,updated_at:new Date().toISOString()}).eq('id',id);
+    if(error)return alert(error.message);await audit(n.pinned?'unpin':'pin','notes',{id,title:n.title});await renderAll();
+  }
+
+  async function renderSummary(){
+    const monthRows=state.entries.filter(e=>e.restaurant===state.restaurant&&e.date.startsWith(state.summaryMonth));
+    const allRows=state.entries.filter(e=>e.restaurant===state.restaurant);
+    let total=0;
+    const blocks=CATEGORIES.map(c=>{
+      const items={};
+      monthRows.filter(e=>e.category===c).forEach(e=>{
+        const key=`${e.subcategory||'Uncategorized'}|||${e.item}|||${e.unit||''}`;
+        items[key]??={item:e.item,unit:e.unit||'',subcategory:e.subcategory||'Uncategorized',qty:0,amount:0};
+        items[key].qty+=e.qty;items[key].amount+=e.qty*e.price;
+      });
+      const arr=Object.values(items);
+      const sub=arr.reduce((s,v)=>s+v.amount,0);total+=sub;
+      const subgroups={};
+      arr.forEach(v=>{(subgroups[v.subcategory]??=[]).push(v)});
+      const subgroupHtml=Object.entries(subgroups).map(([sc,vals])=>{
+        const scTotal=vals.reduce((s,v)=>s+v.amount,0);
+        const scQty=vals.reduce((s,v)=>s+v.qty,0);
+        return `<div class="summary-sub-header"><span>• ${esc(sc)}</span><span>${qty(scQty)} units · ${money(scTotal)}</span></div><table class="summary-table"><thead><tr><th>Item</th><th>Subcategory</th><th>Qty</th><th>Unit</th><th>Unit price</th><th>Total</th><th>All-time qty</th></tr></thead><tbody>${vals.map(v=>{const hist=allRows.filter(e=>e.category===c&&e.item===v.item&&e.unit===v.unit&&((e.subcategory||'Uncategorized')===v.subcategory));const hq=hist.reduce((s,e)=>s+e.qty,0);const ha=hist.reduce((s,e)=>s+e.qty*e.price,0);const avg=hq?ha/hq:0;return `<tr><td class="item-cell">${esc(v.item)}</td><td class="meta">${esc(v.subcategory)}</td><td class="num-cell">${qty(v.qty)}</td><td class="num-cell">${esc(v.unit||'')}</td><td class="num-cell">${money(avg)}</td><td class="num-cell">${money(v.amount)}</td><td class="num-cell"><b>${qty(hq)}</b></td></tr>`}).join('')}</tbody></table>`;
+      }).join('');
+      return `<div class="summary-cat-header"><div class="bar" style="background:${CAT_COLOR[c]}"></div><span>${c}</span></div>${arr.length?subgroupHtml+`<div class="cat-subtotal" style="border-left:3px solid ${CAT_COLOR[c]}"><span>${c} total</span><span class="val">${money(sub)}</span></div>`:'<div class="empty-note">No items this month.</div>'}`}).join('');
+    const allQty=allRows.reduce((s,e)=>s+e.qty,0), allSpend=allRows.reduce((s,e)=>s+e.qty*e.price,0);
+    $('view-summary').innerHTML=`<div class="card"><div class="month-picker"><button id="m-prev">‹</button><div class="label">${monthLabel(state.summaryMonth).toUpperCase()}</div><button id="m-next">›</button></div><div style="font-size:11px;color:var(--ink-soft);text-align:center;margin-bottom:8px">${RESTAURANTS[state.restaurant]}</div><div class="dashboard-grid" style="margin-bottom:12px"><div class="stat"><div class="label">This month</div><div class="value">${money(total)}</div></div><div class="stat"><div class="label">Units this month</div><div class="value">${qty(monthRows.reduce((s,e)=>s+e.qty,0))}</div></div><div class="stat"><div class="label">Since start</div><div class="value">${money(allSpend)}</div></div><div class="stat"><div class="label">All-time units</div><div class="value">${qty(allQty)}</div></div></div><div class="shopping-actions"><button class="primary" id="excel">📊 Excel</button><button id="report">📄 PDF / Report</button></div>${blocks}<div class="grand-total"><span>Total this month</span><span class="val">${money(total)}</span></div></div>`;
+    $('m-prev').onclick=()=>{state.summaryMonth=shiftMonth(state.summaryMonth,-1);renderSummary()};$('m-next').onclick=()=>{state.summaryMonth=shiftMonth(state.summaryMonth,1);renderSummary()};$('excel').onclick=exportExcel;$('report').onclick=exportReport;
+  }
+  function exportExcel(){
+    if(!window.XLSX)return alert('Excel library unavailable.');
+    const rows=state.entries.filter(e=>e.restaurant===state.restaurant&&e.date.startsWith(state.summaryMonth)).map(e=>({Date:e.date,Restaurant:RESTAURANTS[e.restaurant],Category:e.category,Subcategory:e.subcategory||'',Item:e.item,Quantity:e.qty,Unit:e.unit||'','Unit Price ($)':e.price,'Total ($)':e.qty*e.price}));
+    if(!rows.length)return alert('No purchases this month.');
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Purchases');XLSX.writeFile(wb,`El-Gordo-${state.restaurant}-${state.summaryMonth}.xlsx`);
+  }
+  function exportReport(){
+    const old=document.title;document.title=`El Gordo Report ${state.summaryMonth}`;window.print();setTimeout(()=>document.title=old,500)
+  }
+  function exportBackup(){
+    const payload={exported_at:new Date().toISOString(),restaurant:state.restaurant,purchases:state.entries,shopping_list:state.shoppingItems,inventory:state.products,notes:state.notes};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`el-gordo-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href);
+  }
+
+  async function renderAdmin(){
+    if(!isAdmin()){ $('view-admin').innerHTML='<div class="card">Admin only.</div>';return}
+    await loadProducts();await loadAudit(); const profiles=await loadProfiles();
+    $('view-admin').innerHTML=`<div class="card"><h3 style="margin-top:0">⚙️ Inventory & minimums</h3><p style="font-size:11px;color:var(--ink-soft)">Set minimum stock so Smart Shopping List can generate weekly orders.</p>
+      <div class="field"><label>Item</label><input id="p-item" placeholder="Rice"></div>
+      <div class="row-2"><div class="field"><label>Category</label><select id="p-cat" style="width:100%;padding:10px;border:1.5px solid var(--line);border-radius:7px">${CATEGORIES.map(c=>`<option>${c}</option>`).join('')}</select></div><div class="field"><label>Unit</label><input id="p-unit" placeholder="bag"></div></div>
+      <div class="row-2"><div class="field"><label>Current stock</label><input id="p-current" type="number"></div><div class="field"><label>Minimum</label><input id="p-min" type="number"></div></div><button class="add-btn" id="p-save">Save product</button></div>
+      <div class="card"><div style="font-weight:800;margin-bottom:8px">Products — ${RESTAURANTS[state.restaurant]}</div>${state.products.length?state.products.map(p=>`<div class="product-row"><div><b>${esc(p.item)}</b><div class="meta">${p.category} · min ${qty(p.min_qty)} ${esc(p.unit||'')}</div></div><div class="${Number(p.current_qty)<Number(p.min_qty)?'stock-low':'stock-ok'}">${qty(p.current_qty)} ${esc(p.unit||'')}</div></div>`).join(''):'No products configured.'}</div>
+      <div class="card"><div style="font-weight:800;margin-bottom:8px">👥 User roles</div>
+        ${profiles.map(p=>`<div class="product-row"><div><b>${esc(p.email||p.id)}</b><div class="meta">${p.id===user.id?'You':''}</div></div>
+        <select data-role-id="${p.id}" style="padding:7px;border:1px solid var(--line);border-radius:7px">
+          ${['admin','manager','employee','viewer'].map(r=>`<option value="${r}" ${p.role===r?'selected':''}>${r}</option>`).join('')}
+        </select></div>`).join('')}
+      </div>
+      <div class="card"><div style="font-weight:800;margin-bottom:8px">Recent activity</div>${state.audit.slice(0,30).map(a=>`<div class="audit-row"><b>${esc(a.action)}</b> · ${esc(a.details?.user_email||'')}<br><span style="color:var(--ink-soft)">${new Date(a.created_at).toLocaleString()} · ${esc(JSON.stringify(a.details||{}))}</span></div>`).join('')||'No activity yet.'}</div>`;
+    $('p-save').onclick=saveProduct;
+    document.querySelectorAll('[data-role-id]').forEach(s=>s.onchange=()=>updateRole(s.dataset.roleId,s.value));
+  }
+  async function saveProduct(){
+    const item=$('p-item').value.trim(),category=$('p-cat').value,unit=$('p-unit').value.trim(),current=Number($('p-current').value),min=Number($('p-min').value);
+    if(!item||isNaN(current)||isNaN(min))return alert('Fill item, current stock and minimum.');
+    const {error}=await db.from('inventory').upsert({restaurant:state.restaurant,item,category,unit,current_qty:current,min_qty:min,updated_at:new Date().toISOString()},{onConflict:'restaurant,item'});
+    if(error)return alert(error.message);await audit('upsert','inventory',{item,category,current,min});await renderAdmin();
+  }
+
+  async function loadProfile(){
+    const {data:{user:u}}=await db.auth.getUser();user=u;if(!u)return;
+    const {data}=await db.from('profiles').select('*').eq('id',u.id).maybeSingle();
+    profile=data||{id:u.id,role:'employee',email:u.email};
+    $('user-email').textContent=u.email||'';$('role-pill').textContent=profile.role||'employee';
+  }
+
+  async function refresh(){
+    await loadEntries();await loadShopping();await loadProducts();await loadNotes();renderAll();
+  }
+  async function renderAll(){
+    renderNav();
+    if(state.tab==='dashboard')await renderDashboard();
+    if(state.tab==='log')renderLog();
+    if(state.tab==='list')await renderList();
+    if(state.tab==='notes')await renderNotes();
+    if(state.tab==='summary')await renderSummary();
+    if(state.tab==='admin')await renderAdmin();
+  }
+
+  async function boot(){
+    db.auth.onAuthStateChange(async(_event,session)=>{
+      if(session){await loadProfile();$('auth').style.display='none';$('app').style.display='block';await refresh();startRealtime()}
+      else{$('auth').style.display='flex';$('app').style.display='none'}
+    });
+    const {data:{session}}=await db.auth.getSession();
+    if(session){await loadProfile();$('auth').style.display='none';$('app').style.display='block';await refresh();startRealtime()}
+  }
+  let realtimeStarted=false;
+  function startRealtime(){
+    if(realtimeStarted)return;realtimeStarted=true;
+    db.channel('el-gordo-live').on('postgres_changes',{event:'*',schema:'public',table:'purchases'},async()=>{await loadEntries();await renderAll()})
+      .on('postgres_changes',{event:'*',schema:'public',table:'shopping_list'},async()=>{if(state.tab==='list')await renderList()})
+      .on('postgres_changes',{event:'*',schema:'public',table:'inventory'},async()=>{await loadProducts();if(state.tab==='dashboard'||state.tab==='admin')await renderAll()})
+      .on('postgres_changes',{event:'*',schema:'public',table:'notes'},async()=>{await loadNotes();if(state.tab==='notes'||state.tab==='dashboard')await renderAll()})
+      .subscribe();
+  }
+
+  $('auth-signin').onclick=async()=>{
+    const email=$('auth-email').value.trim(),password=$('auth-password').value;
+    const {error}=await db.auth.signInWithPassword({email,password});
+    if(error){$('auth-error').textContent=error.message;$('auth-error').style.display='block'}
+  };
+  $('signout').onclick=async()=>{if(confirm('Sign out?'))await db.auth.signOut()};
+  $('btn-union').onclick=async()=>{state.restaurant='union';await refresh()};
+  $('btn-jersey').onclick=async()=>{state.restaurant='jersey';await refresh()};
+  $('tab-dashboard').onclick=async()=>{state.tab='dashboard';await renderAll()};
+  $('tab-log').onclick=async()=>{state.tab='log';await renderAll()};
+  $('tab-list').onclick=async()=>{state.tab='list';await renderAll()};
+  $('tab-notes').onclick=async()=>{state.tab='notes';state.editingNoteId=null;await renderAll()};
+  $('tab-summary').onclick=async()=>{state.tab='summary';await renderAll()};
+  $('tab-admin').onclick=async()=>{state.tab='admin';await renderAll()};
+  boot();
+})();
+</script>
+</body></html>
